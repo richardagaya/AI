@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  creditBalance Int     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  creditLedger CreditLedgerEntry[]
+  payments     Payment[]
+  jobs         GenerationJob[]
+}
+
+model CreditLedgerEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  delta     Int
+  reason    String
+  paymentId String?
+  jobId     String?
+  createdAt DateTime @default(now())
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  job     GenerationJob?  @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model Payment {
+  id               String   @id @default(cuid())
+  userId           String
+  provider         String
+  providerChargeId String   @unique
+  status           String
+  creditsGranted   Int      @default(0)
+  rawEventType     String?
+  rawEventId       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntries CreditLedgerEntry[]
+
+  @@index([userId, createdAt])
+}
+
+model GenerationJob {
+  id          String   @id @default(cuid())
+  userId      String
+  status      String   @default("queued") // queued | running | succeeded | failed
+  mode        String   // text2img | img2img
+  model       String
+  prompt      String
+  negativePrompt String?
+  inputImagePath  String?
+  outputImagePath String?
+  costCredits Int
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntries CreditLedgerEntry[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
