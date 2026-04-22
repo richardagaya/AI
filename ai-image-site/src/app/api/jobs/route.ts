@@ -1,28 +1,32 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { fsQuery } from "@/lib/firestoreRest";
 
-export async function GET() {
-  const session = await getSession();
+export async function GET(req: Request) {
+  const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const jobs = await prisma.generationJob.findMany({
-    where: { userId: session.userId },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      status: true,
-      mode: true,
-      model: true,
-      prompt: true,
-      outputImagePath: true,
-      costCredits: true,
-      error: true,
-      createdAt: true,
-    },
-  });
+  const docs = await fsQuery(
+    "jobs",
+    "userId",
+    session.userId,
+    "createdAt",
+    "desc",
+    50,
+    session.token,
+  );
+
+  const jobs = docs.map(({ id, data: d }) => ({
+    id,
+    status: d.status,
+    mode: d.mode,
+    model: d.model,
+    prompt: d.prompt,
+    outputImagePath: d.outputImagePath ?? null,
+    costCredits: d.costCredits,
+    error: d.error ?? null,
+    createdAt: d.createdAt ?? new Date().toISOString(),
+  }));
 
   return NextResponse.json({ jobs });
 }
-

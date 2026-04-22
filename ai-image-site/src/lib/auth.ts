@@ -1,68 +1,35 @@
-import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
-import bcrypt from "bcryptjs";
-import { env } from "@/lib/env";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
-const COOKIE_NAME = "ai_session";
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!;
 
-type SessionPayload = {
-  sub: string; // userId
+// Firebase ID tokens are RS256 JWTs signed by Google.
+// Public keys are fetched once and cached automatically by jose.
+const FIREBASE_JWKS = createRemoteJWKSet(
+  new URL(
+    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+  ),
+);
+
+export type Session = {
+  userId: string;
   email: string;
+  /** Raw Firebase ID token — used to call Firestore REST API on behalf of this user. */
+  token: string;
 };
 
-function getJwtSecretKey() {
-  return new TextEncoder().encode(env.AUTH_SECRET);
-}
-
-export async function hashPassword(password: string) {
-  return bcrypt.hash(password, 12);
-}
-
-export async function verifyPassword(password: string, passwordHash: string) {
-  return bcrypt.compare(password, passwordHash);
-}
-
-export async function createSessionCookie(payload: SessionPayload) {
-  const token = await new SignJWT({ email: payload.email })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(payload.sub)
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(getJwtSecretKey());
-
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-}
-
-export async function clearSessionCookie() {
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
-}
-
-export async function getSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
+export async function getSession(req: Request): Promise<Session | null> {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
   try {
-    const { payload } = await jwtVerify(token, getJwtSecretKey());
+    const { payload } = await jwtVerify(token, FIREBASE_JWKS, {
+      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+      audience: PROJECT_ID,
+    });
     const userId = payload.sub;
-    const email = payload.email;
-    if (typeof userId !== "string" || typeof email !== "string") return null;
-    return { userId, email };
+    if (!userId) return null;
+    return { userId, email: (payload["email"] as string) ?? "", token };
   } catch {
     return null;
   }
 }
-

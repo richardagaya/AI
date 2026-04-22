@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { fsCreateJobTx } from "@/lib/firestoreRest";
 import { isPromptDisallowed } from "@/lib/moderation";
 import { saveUploadedFile } from "@/lib/storage";
 
@@ -8,7 +8,7 @@ const COST_TEXT2IMG = 1;
 const COST_IMG2IMG = 2;
 
 export async function POST(req: Request) {
-  const session = await getSession();
+  const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const form = await req.formData();
@@ -21,13 +21,8 @@ export async function POST(req: Request) {
   const imageFile = file instanceof File ? file : null;
 
   if (!prompt) return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
-  if (prompt.length > 2000) {
-    return NextResponse.json({ error: "Prompt too long" }, { status: 400 });
-  }
-  if (isPromptDisallowed(prompt)) {
-    return NextResponse.json({ error: "Prompt not allowed" }, { status: 400 });
-  }
-
+  if (prompt.length > 2000) return NextResponse.json({ error: "Prompt too long" }, { status: 400 });
+  if (isPromptDisallowed(prompt)) return NextResponse.json({ error: "Prompt not allowed" }, { status: 400 });
   if (mode !== "text2img" && mode !== "img2img") {
     return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
   }
@@ -43,49 +38,35 @@ export async function POST(req: Request) {
 
   const costCredits = mode === "img2img" ? COST_IMG2IMG : COST_TEXT2IMG;
 
+  // Save upload before the transaction (async I/O not allowed inside Firestore tx)
+  const upload = imageFile && mode === "img2img" ? await saveUploadedFile(imageFile) : null;
+
+  const jobId = crypto.randomUUID();
+  const now = new Date().toISOString();
+
   try {
-    const created = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: session.userId },
-        select: { id: true, creditBalance: true },
-      });
-      if (!user) throw new Error("USER_NOT_FOUND");
-      if (user.creditBalance < costCredits) throw new Error("INSUFFICIENT_CREDITS");
+    await fsCreateJobTx(
+      session.userId,
+      jobId,
+      {
+        userId: session.userId,
+        status: "pending",
+        mode,
+        model,
+        prompt,
+        negativePrompt,
+        inputImagePath: upload?.fullPath ?? null,
+        outputImagePath: null,
+        costCredits,
+        error: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      costCredits,
+      session.token,
+    );
 
-      const upload =
-        imageFile && mode === "img2img" ? await saveUploadedFile(imageFile) : null;
-
-      const job = await tx.generationJob.create({
-        data: {
-          userId: user.id,
-          mode,
-          model,
-          prompt,
-          negativePrompt,
-          inputImagePath: upload?.fullPath ?? null,
-          costCredits,
-        },
-        select: { id: true, status: true, costCredits: true, createdAt: true },
-      });
-
-      await tx.user.update({
-        where: { id: user.id },
-        data: { creditBalance: { decrement: costCredits } },
-      });
-
-      await tx.creditLedgerEntry.create({
-        data: {
-          userId: user.id,
-          delta: -costCredits,
-          reason: "generation",
-          jobId: job.id,
-        },
-      });
-
-      return job;
-    });
-
-    return NextResponse.json({ job: created });
+    return NextResponse.json({ job: { id: jobId, status: "pending", costCredits, createdAt: now } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "UNKNOWN";
     if (msg === "INSUFFICIENT_CREDITS") {
@@ -97,4 +78,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
   }
 }
-

@@ -1,26 +1,246 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020202;
+  --foreground: #e8e8e8;
+  --cyan: #00e5ff;
+  --surface: #0a0a0a;
+  --surface2: #111111;
+  --border-dim: rgba(255, 255, 255, 0.06);
+  --border-cyan: rgba(0, 229, 255, 0.14);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-space), "Space Grotesk", system-ui, sans-serif;
+  --font-mono: var(--font-mono), "Geist Mono", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── dot grid background ── */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(0, 229, 255, 0.045) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* ── marquee ── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 42s linear infinite;
+}
+
+/* ── hero responsive grid ── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 54% 46%;
+  min-height: 100vh;
+  align-items: center;
+}
+
+@media (max-width: 880px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-img-col {
+    display: none;
+  }
+}
+
+/* ── image mosaic ── */
+.hero-mosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  height: 560px;
+}
+
+/* ── gallery strip ── */
+.gallery-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+
+@media (max-width: 800px) {
+  .gallery-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── image card ── */
+.img-card {
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.1);
+  transition: border-color 0.25s;
+}
+
+.img-card:hover {
+  border-color: rgba(0, 229, 255, 0.45);
+}
+
+.img-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(0.88);
+  transition: filter 0.35s, transform 0.45s;
+}
+
+.img-card:hover img {
+  filter: brightness(1);
+  transform: scale(1.04);
+}
+
+/* ── feature cards ── */
+.fcard {
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 2rem;
+  border: 1px solid rgba(0, 229, 255, 0.1);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.fcard:hover {
+  border-color: rgba(0, 229, 255, 0.38);
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.05);
+}
+
+/* ── nav button ── */
+.nav-btn {
+  background: none;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  color: rgba(232, 232, 232, 0.55);
+  padding: 8px 22px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+}
+
+.nav-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* ── inputs ── */
+.vfield {
+  background: #070707;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  color: #e8e8e8;
+  font-family: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.18s;
+  width: 100%;
+}
+
+.vfield:focus {
+  border-color: var(--cyan);
+}
+
+/* ── buttons ── */
+.btn-primary {
+  border: none;
+  border-radius: 5px;
+  background: var(--cyan);
+  color: #000;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.18s, box-shadow 0.18s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.86;
+  box-shadow: 0 0 42px rgba(0, 229, 255, 0.32);
+}
+
+.btn-primary:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(232, 232, 232, 0.22);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(232, 232, 232, 0.4);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+  font-family: inherit;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: rgba(232, 232, 232, 0.7);
+}
+
+.btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── job status colours (functional, not brand) ── */
+.status-dot-pending   { color: #ffb700; }
+.status-dot-succeeded { color: #00e87a; }
+.status-dot-failed    { color: #ff3300; }
+
+/* ── scanline overlay ── */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.09) 2px,
+    rgba(0, 0, 0, 0.09) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── text gradient ── */
+.text-grad {
+  background: linear-gradient(135deg, #00e5ff 0%, #0088bb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-grad-brand {
+  background: linear-gradient(135deg, #ffffff 20%, #00e5ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── tab toggle ── */
+.tab-active {
+  background: var(--cyan);
+  color: #000;
+}
+
+.tab-inactive {
+  background: none;
+  color: rgba(232, 232, 232, 0.38);
 }

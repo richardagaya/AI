@@ -112,7 +112,7 @@ export async function comfyUploadImage({
   bytes: Buffer;
 }) {
   const form = new FormData();
-  form.set("image", new Blob([bytes]), filename);
+  form.set("image", new Blob([bytes.buffer as ArrayBuffer]), filename);
   form.set("overwrite", "true");
 
   let res: Response;

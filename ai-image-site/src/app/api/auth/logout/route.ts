@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie } from "@/lib/auth";
 
+// Firebase sign-out is handled entirely on the client.
+// This endpoint is kept as a no-op for backwards compatibility.
 export async function POST() {
-  await clearSessionCookie();
   return NextResponse.json({ ok: true });
 }
-

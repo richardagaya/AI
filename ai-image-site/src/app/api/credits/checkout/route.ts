@@ -7,10 +7,10 @@ const BodySchema = z.object({
   credits: z.number().int().min(10).max(100000),
 });
 
-const USD_PER_CREDIT = 0.05; // adjust to your pricing
+const USD_PER_CREDIT = 0.05;
 
 export async function POST(req: Request) {
-  const session = await getSession();
+  const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!env.COINBASE_COMMERCE_API_KEY) {
@@ -40,10 +40,7 @@ export async function POST(req: Request) {
       description: "AI image generation credits",
       pricing_type: "fixed_price",
       local_price: { amount: amountUSD.toFixed(2), currency: "USD" },
-      metadata: {
-        userId: session.userId,
-        credits,
-      },
+      metadata: { userId: session.userId, credits },
       redirect_url: `${env.BASE_URL}/`,
       cancel_url: `${env.BASE_URL}/`,
     }),
@@ -57,13 +54,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const data = (await res.json()) as any;
-  const hostedUrl = data?.data?.hosted_url;
-  const chargeId = data?.data?.id;
+  const data = (await res.json()) as Record<string, unknown>;
+  const chargeData = (data?.data as Record<string, unknown>) ?? {};
+  const hostedUrl = chargeData?.hosted_url;
+  const chargeId = chargeData?.id;
   if (!hostedUrl || !chargeId) {
     return NextResponse.json({ error: "Unexpected response from provider" }, { status: 502 });
   }
 
   return NextResponse.json({ hostedUrl, chargeId });
 }
-
