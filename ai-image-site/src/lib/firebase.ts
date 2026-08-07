@@ -11,6 +11,12 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+if (!firebaseConfig.apiKey) {
+  throw new Error(
+    "Missing Firebase config. Create ai-image-site/.env.local from .env.example and add your Firebase web app credentials.",
+  );
+}
+
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 export const firebaseAuth = getAuth(app);
