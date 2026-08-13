@@ -1,16 +1,17 @@
-import type { Metadata } from "next";
-import { Bebas_Neue, Space_Grotesk, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Space_Grotesk, Instrument_Serif, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const bebas = Bebas_Neue({
-  weight: "400",
-  variable: "--font-bebas",
+const space = Space_Grotesk({
+  variable: "--font-space",
   subsets: ["latin"],
   display: "swap",
 });
 
-const space = Space_Grotesk({
-  variable: "--font-space",
+const serif = Instrument_Serif({
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-serif",
   subsets: ["latin"],
   display: "swap",
 });
@@ -22,9 +23,20 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VOID.GEN — Uncensored AI Art",
+  title: "minsuro — uncensored AI image studio",
   description:
-    "Generate anime, hentai, pokémon, fantasy and NSFW art with AI. No filters. Pay with crypto.",
+    "Minsuro renders anime, fantasy and mature AI art in about thirty seconds. No content filters, no moderation queue, crypto checkout.",
+  openGraph: {
+    title: "minsuro — uncensored AI image studio",
+    description:
+      "Imagine it, minsuro renders it. Anime, fantasy and mature AI art in about thirty seconds.",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#07070a",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -33,9 +45,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bebas.variable} ${space.variable} ${mono.variable} h-full`}
+      className={`${space.variable} ${serif.variable} ${mono.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

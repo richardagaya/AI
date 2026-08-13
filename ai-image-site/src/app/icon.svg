@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="26" fill="#07070A"/>
+  <g transform="translate(60 60)" stroke="#FFD426" stroke-width="6" stroke-linecap="round">
+    <g>
+      <path d="M0 -6 V-46"/><path d="M0 -19 L11 -30"/><path d="M0 -19 L-11 -30"/>
+      <path d="M0 -33 L8 -41"/><path d="M0 -33 L-8 -41"/>
+    </g>
+    <g transform="rotate(60)">
+      <path d="M0 -6 V-46"/><path d="M0 -19 L11 -30"/><path d="M0 -19 L-11 -30"/>
+      <path d="M0 -33 L8 -41"/><path d="M0 -33 L-8 -41"/>
+    </g>
+    <g transform="rotate(120)">
+      <path d="M0 -6 V-46"/><path d="M0 -19 L11 -30"/><path d="M0 -19 L-11 -30"/>
+      <path d="M0 -33 L8 -41"/><path d="M0 -33 L-8 -41"/>
+    </g>
+    <g transform="rotate(180)">
+      <path d="M0 -6 V-46"/><path d="M0 -19 L11 -30"/><path d="M0 -19 L-11 -30"/>
+      <path d="M0 -33 L8 -41"/><path d="M0 -33 L-8 -41"/>
+    </g>
+    <g transform="rotate(240)">
+      <path d="M0 -6 V-46"/><path d="M0 -19 L11 -30"/><path d="M0 -19 L-11 -30"/>
+      <path d="M0 -33 L8 -41"/><path d="M0 -33 L-8 -41"/>
+    </g>
+    <g transform="rotate(300)">
+      <path d="M0 -6 V-46"/><path d="M0 -19 L11 -30"/><path d="M0 -19 L-11 -30"/>
+      <path d="M0 -33 L8 -41"/><path d="M0 -33 L-8 -41"/>
+    </g>
+    <circle r="6" fill="#FFD426" stroke="none"/>
+  </g>
+</svg>
