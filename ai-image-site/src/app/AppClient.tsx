@@ -12,10 +12,10 @@ import { firebaseAuth } from "@/lib/firebase";
 import { AuthDialog, type AuthMode } from "@/components/auth/auth-dialog";
 import { LandingPage } from "@/components/landing/landing-page";
 import {
-  Studio,
+  Dashboard,
   type StudioJob,
   type StudioUser,
-} from "@/components/studio/studio";
+} from "@/components/dashboard/dashboard";
 
 async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const res = await fetch(input, init);
@@ -206,7 +206,7 @@ export default function AppClient() {
 
   if (user) {
     return (
-      <Studio
+      <Dashboard
         user={user}
         jobs={jobs}
         prompt={prompt}
