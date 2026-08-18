@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Composer } from "../composer";
 import { GalleryGrid } from "../gallery-grid";
 import { MediaWall } from "../media-wall";
+import { firstNameOf } from "@/lib/utils";
 import type { DashboardView, GenerateHandlers, StudioJob, StudioUser } from "../types";
 
 function greeting() {
@@ -27,7 +28,7 @@ export function ImageView({
   onNavigate: (v: DashboardView) => void;
   onUsePrompt: (prompt: string) => void;
 }) {
-  const firstName = user.email.split("@")[0].replace(/[._-].*$/, "");
+  const firstName = firstNameOf(user);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-10 pb-16 sm:px-8">

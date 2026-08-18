@@ -1,33 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import Image from "next/image";
+import { LazyVideo } from "@/components/ui/lazy-video";
 import { cn } from "@/lib/utils";
 import type { Media } from "@/lib/media";
-
-/**
- * Autoplaying tiles are paused while offscreen so a wall of clips does not
- * saturate the decoder on lower-end devices.
- */
-function useAutoplayWhenVisible(
-  ref: React.RefObject<HTMLVideoElement | null>,
-  enabled: boolean,
-) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !enabled) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) void el.play().catch(() => {});
-        else el.pause();
-      },
-      { threshold: 0.15 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref, enabled]);
-}
 
 export function MediaCard({
   media,
@@ -43,7 +20,6 @@ export function MediaCard({
   priority?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  useAutoplayWhenVisible(videoRef, media.kind === "video" && play === "auto");
 
   const onEnter = () => {
     if (play === "hover") void videoRef.current?.play().catch(() => {});
@@ -67,14 +43,13 @@ export function MediaCard({
       )}
     >
       {media.kind === "video" ? (
-        <video
-          ref={videoRef}
+        // Clips always start from their poster and stream in once observed —
+        // `priority` only fast-tracks still images for LCP.
+        <LazyVideo
+          videoRef={videoRef}
           src={media.src}
           poster={media.poster}
-          muted
-          loop
-          playsInline
-          preload={priority ? "auto" : "none"}
+          play={play}
           className="size-full object-cover transition-transform duration-[1.2s] group-hover:scale-[1.06]"
         />
       ) : (
@@ -84,6 +59,7 @@ export function MediaCard({
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           priority={priority}
+          loading={priority ? undefined : "lazy"}
           className="object-cover transition-transform duration-[1.2s] group-hover:scale-[1.06]"
         />
       )}

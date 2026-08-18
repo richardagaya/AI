@@ -2,18 +2,12 @@
 
 import { useRef } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
-import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { MediaCard } from "@/components/ui/media-card";
+import { LazyVideo } from "@/components/ui/lazy-video";
 import { Snowfall } from "@/components/landing/snowfall";
-import { CINEMATIC, SHOWCASE } from "@/lib/media";
-
-const STATS = [
-  { value: "~30s", label: "per render" },
-  { value: "0", label: "content filters" },
-  { value: "2", label: "input modes" },
-  { value: "100%", label: "yours to keep" },
-];
+import { HERO_BACKGROUND, SHOWCASE } from "@/lib/media";
 
 export function Hero({ onStart }: { onStart: () => void }) {
   const frame = useRef<HTMLDivElement>(null);
@@ -39,13 +33,10 @@ export function Hero({ onStart }: { onStart: () => void }) {
       id="top"
       className="relative isolate overflow-hidden pt-28 pb-16 sm:pt-32 lg:min-h-dvh lg:pt-40 lg:pb-24"
     >
-      <video
-        src={CINEMATIC.embers.src}
-        poster={CINEMATIC.embers.poster}
-        autoPlay
-        muted
-        loop
-        playsInline
+      <LazyVideo
+        src={HERO_BACKGROUND.src}
+        poster={HERO_BACKGROUND.poster}
+        eager
         className="absolute inset-0 -z-20 size-full object-cover opacity-45"
       />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(255,212,38,0.14),transparent_65%)]" />
@@ -56,16 +47,6 @@ export function Hero({ onStart }: { onStart: () => void }) {
 
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
         <div className="relative z-10 max-w-2xl">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2.5 rounded-full border border-solar/20 bg-solar/[0.07] py-1.5 pr-4 pl-2 text-[0.7rem] font-semibold tracking-[0.14em] uppercase text-solar backdrop-blur-sm"
-          >
-            <span className="size-1.5 animate-pulse-ring rounded-full bg-solar" />
-            Uncensored generation engine
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
@@ -112,33 +93,6 @@ export function Hero({ onStart }: { onStart: () => void }) {
             </a>
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-5 flex items-center gap-2 text-[0.78rem] text-frost-faint"
-          >
-            <Sparkles className="size-3.5 text-solar/70" />
-            1 credit = 1 image · crypto checkout · no ID, no KYC
-          </motion.p>
-
-          <motion.dl
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.38 }}
-            className="mt-12 grid grid-cols-2 gap-y-7 border-t border-line/60 pt-8 sm:grid-cols-4"
-          >
-            {STATS.map((s) => (
-              <div key={s.label}>
-                <dt className="text-2xl font-semibold tracking-[-0.04em] text-solar sm:text-[1.7rem]">
-                  {s.value}
-                </dt>
-                <dd className="mt-1 text-[0.68rem] tracking-[0.14em] uppercase text-frost-faint">
-                  {s.label}
-                </dd>
-              </div>
-            ))}
-          </motion.dl>
         </div>
 
         <motion.div

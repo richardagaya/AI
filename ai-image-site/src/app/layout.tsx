@@ -47,6 +47,13 @@ export default function RootLayout({
       lang="en"
       className={`${space.variable} ${serif.variable} ${mono.variable}`}
     >
+      <head>
+        {/* Warm up the TLS handshake to the media CDNs before the first request */}
+        <link rel="preconnect" href="https://assets.mixkit.co" crossOrigin="" />
+        <link rel="preconnect" href="https://image.civitai.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://assets.mixkit.co" />
+        <link rel="dns-prefetch" href="https://image.civitai.com" />
+      </head>
       <body className="antialiased">{children}</body>
     </html>
   );

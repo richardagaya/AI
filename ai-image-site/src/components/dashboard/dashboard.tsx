@@ -2,9 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, Snowflake as SnowIcon, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Logo, Snowflake } from "@/components/brand/snowflake";
-import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 import { AffiliateView } from "./views/affiliate-view";
 import { CreateInfluencerView } from "./views/create-influencer-view";
@@ -39,12 +38,10 @@ export function Dashboard({
 } & GenerateHandlers) {
   const [view, setView] = useState<DashboardView>("image");
   const [navOpen, setNavOpen] = useState(false);
-  const [videoNotice, setVideoNotice] = useState(false);
 
   const navigate = useCallback((v: DashboardView) => {
     setView(v);
     setNavOpen(false);
-    setVideoNotice(false);
   }, []);
 
   const usePrompt = useCallback(
@@ -55,14 +52,7 @@ export function Dashboard({
     [handlers, navigate],
   );
 
-  const imageHandlers: GenerateHandlers = { ...handlers, busy };
-
-  const videoHandlers: GenerateHandlers = {
-    ...handlers,
-    busy,
-    canGenerate: handlers.prompt.trim().length > 0,
-    onGenerate: () => setVideoNotice(true),
-  };
+  const generateHandlers: GenerateHandlers = { ...handlers, busy };
 
   return (
     <div className="flex h-dvh overflow-hidden bg-ink">
@@ -150,12 +140,12 @@ export function Dashboard({
                 <ImageView
                   user={user}
                   jobs={jobs}
-                  handlers={imageHandlers}
+                  handlers={generateHandlers}
                   onNavigate={navigate}
                   onUsePrompt={usePrompt}
                 />
               )}
-              {view === "video" && <VideoView handlers={videoHandlers} />}
+              {view === "video" && <VideoView handlers={generateHandlers} />}
               {view === "enhance" && <EnhanceView />}
               {view === "influencers" && (
                 <InfluencersView onNavigate={navigate} />
@@ -170,39 +160,6 @@ export function Dashboard({
           </AnimatePresence>
         </main>
       </div>
-
-      {/* Video early-access toast */}
-      <AnimatePresence>
-        {videoNotice && (
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            className={cn(
-              "fixed bottom-6 left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-md -translate-x-1/2",
-            )}
-          >
-            <div className="glass-panel relative overflow-hidden rounded-2xl p-4 pr-11 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.8)]">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nova to-transparent" />
-              <p className="flex items-center gap-2 text-[0.84rem] font-semibold">
-                <SnowIcon className="size-4 text-nova-soft" />
-                You&apos;re on the video waitlist
-              </p>
-              <p className="mt-1 text-[0.76rem] leading-relaxed text-frost-faint">
-                Motion One rolls out to Pro accounts first — your prompt is
-                saved and will be rendered the moment your seat opens.
-              </p>
-              <button
-                onClick={() => setVideoNotice(false)}
-                aria-label="Dismiss"
-                className="absolute top-3 right-3 cursor-pointer rounded-lg p-1.5 text-frost-faint transition-colors hover:bg-white/5 hover:text-frost"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

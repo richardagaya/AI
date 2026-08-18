@@ -1,17 +1,15 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { ensureStorageDirs, OUTPUTS_DIR, randomFilename } from "../src/lib/storage";
-import {
-  comfyDownloadOutputImage,
-  comfyGetHistory,
-  comfyQueuePrompt,
-  comfyUploadImage,
-  hydrateWorkflowTemplate,
-  loadWorkflow,
-} from "../src/lib/comfy";
+import { getModel } from "../src/lib/fal-models";
+import { runFalGeneration } from "../src/lib/fal";
+
+// The worker runs outside Next.js, so load .env.local manually
+loadEnv({ path: ".env.local" });
+loadEnv();
 
 // Initialise Firebase Admin for the worker process
 if (getApps().length === 0) {
@@ -29,27 +27,48 @@ async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-function pickFirstImageFromHistory(history: Record<string, unknown>, promptId: string) {
-  const root = history?.[promptId] as Record<string, unknown> | undefined;
-  const outputs = root?.outputs as Record<string, unknown> | undefined;
-  if (!outputs) return null;
+type JobDoc = {
+  id: string;
+  status: string;
+  kind?: string;
+  mode: string;
+  model: string;
+  prompt: string;
+  negativePrompt: string | null;
+  aspect?: string | null;
+  duration?: string | null;
+  camera?: string | null;
+  strength?: number | null;
+  inputImagePath: string | null;
+  outputImagePath: string | null;
+};
 
-  for (const nodeId of Object.keys(outputs)) {
-    const out = outputs[nodeId] as Record<string, unknown> | undefined;
-    const images = out?.images as Array<Record<string, unknown>> | undefined;
-    if (Array.isArray(images) && images.length > 0) {
-      const img = images[0];
-      if (img?.filename) return img as { filename: string; subfolder?: string; type?: string };
-    }
+function extForOutput(kind: "image" | "video", contentType: string | null): string {
+  if (kind === "video") return "mp4";
+  switch (contentType) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    default:
+      return "png";
   }
-  return null;
+}
+
+async function downloadToOutputs(url: string, ext: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download fal output (${res.status})`);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  const outPath = path.join(OUTPUTS_DIR, randomFilename(ext));
+  await writeFile(outPath, bytes);
+  return outPath;
 }
 
 async function processOneJob(): Promise<boolean> {
-  // Find the oldest queued job
+  // Find the oldest pending job
   const snap = await db
     .collection("jobs")
-    .where("status", "==", "queued")
+    .where("status", "==", "pending")
     .orderBy("createdAt", "asc")
     .limit(1)
     .get();
@@ -57,77 +76,42 @@ async function processOneJob(): Promise<boolean> {
   if (snap.empty) return false;
 
   const jobDoc = snap.docs[0];
-  const job = { id: jobDoc.id, ...jobDoc.data() } as {
-    id: string;
-    status: string;
-    mode: string;
-    model: string;
-    prompt: string;
-    negativePrompt: string | null;
-    inputImagePath: string | null;
-    outputImagePath: string | null;
-  };
+  const job = { id: jobDoc.id, ...jobDoc.data() } as JobDoc;
 
   await jobDoc.ref.update({ status: "running", updatedAt: Timestamp.now() });
 
   try {
     await ensureStorageDirs();
 
-    const workflowTemplate = await loadWorkflow(job.mode as "text2img" | "img2img");
+    const model = getModel(job.model);
+    if (!model) throw new Error(`Unknown model "${job.model}"`);
 
-    let comfyInputImageName: string | null = null;
-    if (job.mode === "img2img") {
-      if (!job.inputImagePath) throw new Error("Missing input image for img2img job");
-      const bytes = await import("node:fs/promises").then((m) =>
-        m.readFile(job.inputImagePath as string),
-      );
-      const uploaded = await comfyUploadImage({
-        filename: path.basename(job.inputImagePath),
-        bytes,
-      });
-      if (!uploaded) throw new Error("ComfyUI did not return uploaded image name");
-      comfyInputImageName = uploaded;
-    }
-
-    const workflow = hydrateWorkflowTemplate({
-      workflowTemplate,
+    const output = await runFalGeneration(model, {
       prompt: job.prompt,
-      negativePrompt: job.negativePrompt ?? null,
-      inputImageName: comfyInputImageName,
+      negativePrompt: job.negativePrompt,
+      aspect: job.aspect ?? model.aspects[0],
+      duration: job.duration ? Number(job.duration) : undefined,
+      camera: job.camera,
+      strength: job.strength ?? undefined,
+      inputImagePath: job.inputImagePath,
     });
 
-    const promptId = await comfyQueuePrompt(workflow);
-
-    const started = Date.now();
-    const timeoutMs = 5 * 60 * 1000;
-    let history: Record<string, unknown> = {};
-    while (Date.now() - started < timeoutMs) {
-      history = await comfyGetHistory(promptId);
-      if (pickFirstImageFromHistory(history, promptId)) break;
-      await sleep(1500);
-    }
-
-    const img = pickFirstImageFromHistory(history, promptId);
-    if (!img) throw new Error("Timed out waiting for ComfyUI output");
-
-    const imageBytes = await comfyDownloadOutputImage({
-      filename: img.filename,
-      subfolder: img.subfolder,
-      type: img.type,
-    });
-
-    const outName = randomFilename("png");
-    const outPath = path.join(OUTPUTS_DIR, outName);
-    await writeFile(outPath, imageBytes);
+    const outPath = await downloadToOutputs(
+      output.url,
+      extForOutput(output.kind, output.contentType),
+    );
 
     await jobDoc.ref.update({
       status: "succeeded",
       outputImagePath: outPath,
+      outputKind: output.kind,
       error: null,
       updatedAt: Timestamp.now(),
     });
+    console.log(`[worker] job ${job.id} succeeded (${model.label})`);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
+    console.error(`[worker] job ${job.id} failed: ${message}`);
     await jobDoc.ref.update({
       status: "failed",
       error: message.slice(0, 1000),
@@ -139,17 +123,18 @@ async function processOneJob(): Promise<boolean> {
 }
 
 async function main() {
-  // eslint-disable-next-line no-console
-  console.log("Worker started. Polling for queued jobs...");
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  if (!process.env.FAL_KEY) {
+    console.error("FAL_KEY is not set. Add it to .env.local and restart the worker.");
+    process.exit(1);
+  }
+  console.log("Worker started (fal.ai engine). Polling for pending jobs...");
+  for (;;) {
     const did = await processOneJob();
     if (!did) await sleep(1000);
   }
 }
 
 main().catch((e) => {
-  // eslint-disable-next-line no-console
   console.error(e);
   process.exit(1);
 });

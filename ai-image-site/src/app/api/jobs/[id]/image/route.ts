@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { getSession } from "@/lib/auth";
 import { fsGet } from "@/lib/firestoreRest";
+
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".mp4": "video/mp4",
+};
 
 export async function GET(
   req: Request,
@@ -20,8 +29,13 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const bytes = await readFile(d.outputImagePath as string);
+  const outputPath = d.outputImagePath as string;
+  const bytes = await readFile(outputPath);
+  const contentType =
+    CONTENT_TYPE_BY_EXT[path.extname(outputPath).toLowerCase()] ??
+    (d.outputKind === "video" ? "video/mp4" : "image/png");
+
   return new NextResponse(bytes, {
-    headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+    headers: { "Content-Type": contentType, "Cache-Control": "no-store" },
   });
 }

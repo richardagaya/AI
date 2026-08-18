@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
   type User as FirebaseUser,
@@ -16,6 +18,7 @@ import {
   type StudioJob,
   type StudioUser,
 } from "@/components/dashboard/dashboard";
+import type { GenerateSettings } from "@/components/dashboard/types";
 
 async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const res = await fetch(input, init);
@@ -45,19 +48,12 @@ export default function AppClient() {
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [mode, setMode] = useState<"text2img" | "img2img">("text2img");
-  const [model, setModel] = useState("default");
   const [image, setImage] = useState<File | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const firebaseUserRef = useRef<FirebaseUser | null>(null);
-
-  const canGenerate = useMemo(() => {
-    if (!user || !prompt.trim()) return false;
-    if (mode === "img2img" && !image) return false;
-    return true;
-  }, [user, prompt, mode, image]);
 
   const authHeaders = useCallback(async (): Promise<HeadersInit> => {
     const token = await firebaseUserRef.current?.getIdToken();
@@ -74,7 +70,14 @@ export default function AppClient() {
     const res = await jsonFetch<{ user: StudioUser | null }>("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    setUser(res.user);
+    setUser(
+      res.user
+        ? {
+            ...res.user,
+            displayName: res.user.displayName || target.displayName,
+          }
+        : null,
+    );
   }, []);
 
   const refreshJobs = useCallback(async () => {
@@ -139,6 +142,24 @@ export default function AppClient() {
     }
   }
 
+  async function onGoogleSignIn() {
+    setError(null);
+    setBusy(true);
+    try {
+      const cred = await signInWithPopup(
+        firebaseAuth,
+        new GoogleAuthProvider(),
+      );
+      firebaseUserRef.current = cred.user;
+      await refreshMe(cred.user);
+      setAuthOpen(false);
+    } catch (e: unknown) {
+      setError(readableAuthError(e, "Google sign-in failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onLogout() {
     setError(null);
     setBusy(true);
@@ -174,8 +195,7 @@ export default function AppClient() {
     }
   }
 
-  async function onGenerate() {
-    if (!canGenerate) return;
+  async function onGenerate(settings: GenerateSettings) {
     setError(null);
     setBusy(true);
     try {
@@ -183,7 +203,12 @@ export default function AppClient() {
       form.set("prompt", prompt);
       form.set("negativePrompt", negativePrompt);
       form.set("mode", mode);
-      form.set("model", model);
+      form.set("kind", settings.kind);
+      form.set("model", settings.model);
+      form.set("aspect", settings.aspect);
+      if (settings.duration) form.set("duration", settings.duration);
+      if (settings.camera) form.set("camera", settings.camera);
+      if (settings.strength != null) form.set("strength", String(settings.strength));
       if (image) form.set("image", image);
 
       await jsonFetch("/api/generate", {
@@ -212,15 +237,12 @@ export default function AppClient() {
         prompt={prompt}
         negativePrompt={negativePrompt}
         mode={mode}
-        model={model}
         image={image}
         busy={busy}
         error={error}
-        canGenerate={canGenerate}
         onPromptChange={setPrompt}
         onNegativePromptChange={setNegativePrompt}
         onModeChange={setMode}
-        onModelChange={setModel}
         onImageChange={setImage}
         onGenerate={onGenerate}
         onTopUp={onTopUp}
@@ -243,6 +265,7 @@ export default function AppClient() {
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onSubmit={onAuthSubmit}
+        onGoogle={onGoogleSignIn}
         onClose={() => setAuthOpen(false)}
       />
     </>

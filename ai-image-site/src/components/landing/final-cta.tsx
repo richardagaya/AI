@@ -3,21 +3,18 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
+import { LazyVideo } from "@/components/ui/lazy-video";
 import { Snowflake } from "@/components/brand/snowflake";
-import { CINEMATIC } from "@/lib/media";
+import { FINAL_CTA_BACKGROUND } from "@/lib/media";
 
 export function FinalCta({ onStart }: { onStart: () => void }) {
   return (
     <section className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 sm:pb-32">
       <Reveal>
         <div className="relative isolate overflow-hidden rounded-[2.5rem] border border-solar/20 px-6 py-20 text-center sm:px-16 sm:py-28">
-          <video
-            src={CINEMATIC.snowDusk.src}
-            poster={CINEMATIC.snowDusk.poster}
-            autoPlay
-            muted
-            loop
-            playsInline
+          <LazyVideo
+            src={FINAL_CTA_BACKGROUND.src}
+            poster={FINAL_CTA_BACKGROUND.poster}
             className="absolute inset-0 -z-20 size-full object-cover opacity-20"
           />
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/70 via-ink/85 to-ink" />

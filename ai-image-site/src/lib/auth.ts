@@ -13,6 +13,7 @@ const FIREBASE_JWKS = createRemoteJWKSet(
 export type Session = {
   userId: string;
   email: string;
+  displayName: string | null;
   /** Raw Firebase ID token — used to call Firestore REST API on behalf of this user. */
   token: string;
 };
@@ -28,7 +29,16 @@ export async function getSession(req: Request): Promise<Session | null> {
     });
     const userId = payload.sub;
     if (!userId) return null;
-    return { userId, email: (payload["email"] as string) ?? "", token };
+    const displayName =
+      typeof payload["name"] === "string" && payload["name"].trim()
+        ? payload["name"].trim()
+        : null;
+    return {
+      userId,
+      email: (payload["email"] as string) ?? "",
+      displayName,
+      token,
+    };
   } catch {
     return null;
   }

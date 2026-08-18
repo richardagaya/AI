@@ -1,16 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  Check,
   ChevronDown,
+  Clock,
   Dices,
+  ImagePlus,
   Loader2,
-  Upload,
+  Video,
   Wand2,
+  X,
   Zap,
 } from "lucide-react";
+import {
+  costFor,
+  defaultModelFor,
+  getModel,
+  modelSupportsImageInput,
+  modelsFor,
+  UI_ASPECTS,
+} from "@/lib/fal-models";
+import { Dropdown, DropdownOption } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
+import { ModelPicker } from "./model-picker";
 import type { GenerateHandlers } from "./types";
 
 const SUGGESTIONS = [
@@ -33,32 +47,25 @@ const SURPRISE_PROMPTS = [
   "astral witch floating in a nebula library, floating grimoires, purple starlight, dreamy glow",
 ];
 
-const IMAGE_MODELS = [
-  { id: "default", label: "Minsuro Ultra" },
-  { id: "anime-xl", label: "Anime XL" },
-  { id: "photoreal", label: "Photoreal" },
-  { id: "fantasy", label: "Fantasy" },
-];
-
-const VIDEO_MODELS = [
-  { id: "motion-1", label: "Motion One" },
-  { id: "cinema-xl", label: "Cinema XL" },
-  { id: "anime-motion", label: "Anime Motion" },
-];
-
-const ASPECTS = [
-  { id: "2:3", label: "2:3", w: 10, h: 15 },
-  { id: "1:1", label: "1:1", w: 13, h: 13 },
-  { id: "3:2", label: "3:2", w: 15, h: 10 },
-  { id: "16:9", label: "16:9", w: 17, h: 10 },
-  { id: "9:16", label: "9:16", w: 9, h: 16 },
-];
-
-const DURATIONS = ["4s", "8s", "16s"];
 const CAMERA_MOVES = ["Static", "Orbit", "Dolly in", "Crane up", "Handheld"];
 
 const QUALITY_TAGS =
   "ultra detailed, cinematic lighting, sharp focus, 8k, masterpiece";
+
+/** Little proportional rectangle that previews an aspect ratio. */
+function AspectGlyph({ id, active }: { id: string; active?: boolean }) {
+  const spec = UI_ASPECTS.find((a) => a.id === id);
+  if (!spec) return null;
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-[3px] border",
+        active ? "border-solar" : "border-current",
+      )}
+      style={{ width: spec.w, height: spec.h }}
+    />
+  );
+}
 
 export function Composer({
   variant,
@@ -71,30 +78,51 @@ export function Composer({
     prompt,
     negativePrompt,
     mode,
-    model,
     image,
     busy,
     error,
-    canGenerate,
     onPromptChange,
     onNegativePromptChange,
     onModeChange,
-    onModelChange,
     onImageChange,
     onGenerate,
   } = handlers;
 
   const isVideo = variant === "video";
-  const models = isVideo ? VIDEO_MODELS : IMAGE_MODELS;
-  const activeModel = models.some((m) => m.id === model) ? model : models[0].id;
+  const kind = isVideo ? "video" : "image";
+  const models = modelsFor(kind);
+
+  const [modelId, setModelId] = useState(defaultModelFor(kind).id);
+  const model = getModel(modelId) ?? defaultModelFor(kind);
 
   const [aspect, setAspect] = useState(isVideo ? "16:9" : "2:3");
-  const [duration, setDuration] = useState("8s");
+  const [duration, setDuration] = useState(model.durations?.[1] ?? 8);
   const [camera, setCamera] = useState("Orbit");
+  const [strength, setStrength] = useState(0.8);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [suggestionIdx, setSuggestionIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const enhanced = prompt.includes(QUALITY_TAGS);
+
+  const acceptsImage = modelSupportsImageInput(model);
+  const usesImage = Boolean(image && acceptsImage);
+  const needsImage = !isVideo && mode === "img2img";
+  const canGenerate = prompt.trim().length > 0 && (!needsImage || usesImage);
+  const cost = costFor(model, usesImage);
+
+  const aspects = UI_ASPECTS.filter((a) => model.aspects.includes(a.id));
+
+  // Preview URL for the attached reference image
+  const previewUrl = useMemo(
+    () => (image ? URL.createObjectURL(image) : null),
+    [image],
+  );
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     const t = setInterval(
@@ -103,6 +131,29 @@ export function Composer({
     );
     return () => clearInterval(t);
   }, []);
+
+  function selectModel(id: string) {
+    const m = getModel(id);
+    if (!m) return;
+    setModelId(id);
+    if (!m.aspects.includes(aspect)) setAspect(m.aspects[0]);
+    if (m.durations && !m.durations.includes(duration)) {
+      setDuration(m.durations[0]);
+    }
+    if (!modelSupportsImageInput(m)) clearImage();
+  }
+
+  function pickImage(f: File | null) {
+    if (!f) return;
+    onImageChange(f);
+    if (!isVideo) onModeChange("img2img");
+  }
+
+  function clearImage() {
+    onImageChange(null);
+    if (fileRef.current) fileRef.current.value = "";
+    if (!isVideo) onModeChange("text2img");
+  }
 
   function surprise() {
     const next =
@@ -117,29 +168,31 @@ export function Composer({
     onPromptChange(`${prompt.replace(/[,.\s]+$/, "")}, ${QUALITY_TAGS}`);
   }
 
-  const cost = isVideo ? 8 : mode === "img2img" ? 2 : 1;
+  function generate() {
+    if (!canGenerate || busy) return;
+    onGenerate({
+      kind,
+      model: model.id,
+      aspect,
+      duration: isVideo ? String(duration) : undefined,
+      camera: isVideo ? camera : undefined,
+      strength: !isVideo && usesImage ? strength : undefined,
+    });
+  }
 
   return (
     <div className="w-full">
-      {/* Model chips */}
-      <div className="no-scrollbar mb-3 flex items-center gap-2 overflow-x-auto px-1">
+      {/* Model picker — searchable, grouped by provider */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 px-1">
         <span className="mr-1 shrink-0 text-[0.62rem] font-bold tracking-[0.2em] uppercase text-frost-faint">
           Model
         </span>
-        {models.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => onModelChange(m.id)}
-            className={cn(
-              "shrink-0 cursor-pointer rounded-full border px-3.5 py-1.5 text-[0.74rem] font-semibold transition-all duration-200",
-              activeModel === m.id
-                ? "border-solar/60 bg-solar/10 text-solar shadow-[0_0_20px_-6px_rgba(255,212,38,0.5)]"
-                : "border-line/80 bg-white/[0.02] text-frost-faint hover:border-line hover:text-frost-dim",
-            )}
-          >
-            {m.label}
-          </button>
-        ))}
+        <ModelPicker
+          models={models}
+          value={model}
+          onChange={selectModel}
+          withImage={usesImage}
+        />
       </div>
 
       {/* Composer card with flowing gradient border */}
@@ -159,7 +212,7 @@ export function Composer({
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canGenerate && !busy) {
                 e.preventDefault();
-                onGenerate();
+                generate();
               }
             }}
             rows={3}
@@ -171,74 +224,139 @@ export function Composer({
             className="w-full resize-none rounded-t-[25px] bg-transparent p-5 text-[0.95rem] leading-relaxed text-frost outline-none placeholder:text-frost-faint/70 sm:p-6"
           />
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-line/50 px-4 py-3 sm:px-5">
-            {/* Aspect ratios */}
-            <div className="flex items-center gap-1 rounded-full border border-line/70 bg-ink-soft/60 p-1">
-              {ASPECTS.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => setAspect(a.id)}
-                  title={a.label}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1.5 transition-all",
-                    aspect === a.id
-                      ? "bg-white/[0.08] text-solar"
-                      : "text-frost-faint hover:text-frost-dim",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "rounded-[3px] border",
-                      aspect === a.id ? "border-solar" : "border-current",
-                    )}
-                    style={{ width: a.w, height: a.h }}
-                  />
-                  <span className="hidden text-[0.62rem] font-semibold xl:inline">
-                    {a.label}
-                  </span>
-                </button>
-              ))}
+          {/* Attached reference image preview */}
+          {image && previewUrl && (
+            <div className="mx-4 mb-1 flex items-center gap-3 rounded-2xl border border-line/70 bg-ink-soft/60 p-2.5 sm:mx-5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="Reference upload"
+                className="size-11 shrink-0 rounded-xl border border-line/60 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[0.78rem] font-semibold text-frost">
+                  {image.name}
+                </p>
+                <p className="text-[0.66rem] tracking-[0.08em] uppercase text-frost-faint">
+                  {isVideo ? "Start frame · image to video" : "Reference · image to image"}
+                </p>
+              </div>
+              <button
+                onClick={clearImage}
+                aria-label="Remove image"
+                className="cursor-pointer rounded-lg p-1.5 text-frost-faint transition-colors hover:bg-white/5 hover:text-red-400"
+              >
+                <X className="size-4" />
+              </button>
             </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-line/50 px-4 py-3 sm:px-5">
+            {/* Aspect ratio — options limited to what the model supports */}
+            <Dropdown
+              label="Aspect ratio"
+              trigger={
+                <span className="flex items-center gap-1.5">
+                  <AspectGlyph id={aspect} active />
+                  {aspect}
+                </span>
+              }
+            >
+              {(close) => (
+                <div className="py-1.5">
+                  {aspects.map((a) => (
+                    <DropdownOption
+                      key={a.id}
+                      selected={aspect === a.id}
+                      onSelect={() => {
+                        setAspect(a.id);
+                        close();
+                      }}
+                    >
+                      <AspectGlyph id={a.id} active={aspect === a.id} />
+                      <span className="flex-1 font-semibold">{a.label}</span>
+                      {aspect === a.id && <Check className="size-3.5" />}
+                    </DropdownOption>
+                  ))}
+                </div>
+              )}
+            </Dropdown>
 
             {isVideo && (
               <>
-                <div className="flex items-center gap-1 rounded-full border border-line/70 bg-ink-soft/60 p-1">
-                  {DURATIONS.map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => setDuration(d)}
-                      className={cn(
-                        "cursor-pointer rounded-full px-2.5 py-1.5 text-[0.66rem] font-semibold transition-all",
-                        duration === d
-                          ? "bg-white/[0.08] text-solar"
-                          : "text-frost-faint hover:text-frost-dim",
-                      )}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-                <div className="no-scrollbar flex items-center gap-1 overflow-x-auto rounded-full border border-line/70 bg-ink-soft/60 p-1">
-                  {CAMERA_MOVES.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCamera(c)}
-                      className={cn(
-                        "shrink-0 cursor-pointer rounded-full px-2.5 py-1.5 text-[0.66rem] font-semibold whitespace-nowrap transition-all",
-                        camera === c
-                          ? "bg-white/[0.08] text-solar"
-                          : "text-frost-faint hover:text-frost-dim",
-                      )}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
+                <Dropdown label="Duration" trigger={<span>{duration}s</span>}>
+                  {(close) => (
+                    <div className="py-1.5">
+                      {(model.durations ?? []).map((d) => (
+                        <DropdownOption
+                          key={d}
+                          selected={duration === d}
+                          onSelect={() => {
+                            setDuration(d);
+                            close();
+                          }}
+                        >
+                          <Clock className="size-3.5 shrink-0" />
+                          <span className="flex-1 font-semibold">{d} seconds</span>
+                          {duration === d && <Check className="size-3.5" />}
+                        </DropdownOption>
+                      ))}
+                    </div>
+                  )}
+                </Dropdown>
+
+                <Dropdown label="Camera move" trigger={<span>{camera}</span>}>
+                  {(close) => (
+                    <div className="py-1.5">
+                      {CAMERA_MOVES.map((c) => (
+                        <DropdownOption
+                          key={c}
+                          selected={camera === c}
+                          onSelect={() => {
+                            setCamera(c);
+                            close();
+                          }}
+                        >
+                          <Video className="size-3.5 shrink-0" />
+                          <span className="flex-1 font-semibold">{c}</span>
+                          {camera === c && <Check className="size-3.5" />}
+                        </DropdownOption>
+                      ))}
+                    </div>
+                  )}
+                </Dropdown>
               </>
             )}
 
             <div className="mx-1 hidden h-5 w-px bg-line/70 sm:block" />
 
+            {/* Reference image upload — both tabs (img2img / image2video) */}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => pickImage(e.target.files?.[0] ?? null)}
+              className="sr-only"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={!acceptsImage}
+              title={
+                acceptsImage
+                  ? isVideo
+                    ? "Upload a start frame (image to video)"
+                    : "Upload a reference image (image to image)"
+                  : `${model.label} doesn't take image input`
+              }
+              className={cn(
+                "cursor-pointer rounded-full border p-2.5 transition-all disabled:cursor-not-allowed disabled:opacity-35",
+                image
+                  ? "border-solar/60 bg-solar/10 text-solar"
+                  : "border-line/70 bg-ink-soft/60 text-frost-faint hover:border-solar/50 hover:text-solar",
+              )}
+            >
+              <ImagePlus className="size-4" />
+            </button>
             <button
               onClick={surprise}
               title="Surprise me"
@@ -278,7 +396,7 @@ export function Composer({
                 </button>
               )}
               <button
-                onClick={onGenerate}
+                onClick={generate}
                 disabled={busy || !canGenerate}
                 className={cn(
                   "group relative flex cursor-pointer items-center gap-2 overflow-hidden rounded-full bg-solar px-5 py-2.5 text-[0.8rem] font-bold text-on-solar transition-all duration-200",
@@ -330,35 +448,51 @@ export function Composer({
                   }
                   className="h-11 w-full rounded-xl border border-line bg-ink-soft/80 px-3 text-sm text-frost outline-none transition-all focus:border-solar/70 focus:ring-3 focus:ring-solar/12"
                 >
-                  <option value="text2img">Text → Image · 1 credit</option>
-                  <option value="img2img">Image → Image · 2 credits</option>
+                  <option value="text2img">Text → Image · {model.cost.text} cr</option>
+                  <option value="img2img" disabled={!acceptsImage}>
+                    Image → Image · {model.cost.image} cr
+                    {acceptsImage ? "" : " (unsupported on this model)"}
+                  </option>
                 </select>
               </label>
               {mode === "img2img" && (
-                <div className="grid gap-2 sm:col-span-2">
-                  <span className="text-[0.62rem] font-bold tracking-[0.18em] uppercase text-frost-faint">
-                    Reference image
-                  </span>
-                  <div className="flex items-center gap-3 rounded-xl border border-dashed border-line bg-ink-soft/60 p-4 transition-colors hover:border-solar/40">
-                    <Upload className="size-4 shrink-0 text-solar" />
-                    <span className="min-w-0 flex-1 truncate text-[0.8rem] text-frost-dim">
-                      {image?.name ?? "PNG, JPEG or WebP · up to 8 MB"}
+                <>
+                  <div className="grid gap-2 sm:col-span-2">
+                    <span className="text-[0.62rem] font-bold tracking-[0.18em] uppercase text-frost-faint">
+                      Reference image
+                    </span>
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line bg-ink-soft/60 p-4 text-left transition-colors hover:border-solar/40"
+                    >
+                      <ImagePlus className="size-4 shrink-0 text-solar" />
+                      <span className="min-w-0 flex-1 truncate text-[0.8rem] text-frost-dim">
+                        {image?.name ?? "PNG, JPEG or WebP · up to 8 MB"}
+                      </span>
+                      <span className="rounded-full border border-line px-3 py-1.5 text-[0.72rem] font-medium transition-colors hover:border-solar/50 hover:text-solar">
+                        {image ? "Replace" : "Choose"}
+                      </span>
+                    </button>
+                  </div>
+                  <label className="grid gap-2 sm:col-span-2">
+                    <span className="flex items-center justify-between text-[0.62rem] font-bold tracking-[0.18em] uppercase text-frost-faint">
+                      Denoise strength
+                      <span className="font-mono text-solar">{strength.toFixed(2)}</span>
                     </span>
                     <input
-                      id="composer-reference-upload"
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={(e) => onImageChange(e.target.files?.[0] ?? null)}
-                      className="sr-only"
+                      type="range"
+                      min={0.1}
+                      max={1}
+                      step={0.05}
+                      value={strength}
+                      onChange={(e) => setStrength(Number(e.target.value))}
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/[0.08] accent-solar"
                     />
-                    <label
-                      htmlFor="composer-reference-upload"
-                      className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-[0.72rem] font-medium transition-colors hover:border-solar/50 hover:text-solar"
-                    >
-                      Choose
-                    </label>
-                  </div>
-                </div>
+                    <span className="text-[0.68rem] text-frost-faint">
+                      Lower keeps more of your image, higher reimagines it.
+                    </span>
+                  </label>
+                </>
               )}
             </div>
           )}

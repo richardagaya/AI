@@ -1,8 +1,17 @@
 import { z } from "zod";
 
+/** Treats a blank value (e.g. `FAL_KEY=` placeholder) the same as unset. */
+const optionalSecret = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.string().min(1).optional(),
+);
+
 const EnvSchema = z.object({
   BASE_URL: z.string().url(),
   COMFYUI_URL: z.string().url().default("http://127.0.0.1:8188"),
+
+  // fal.ai API key (server-side only) — used by the generation worker
+  FAL_KEY: optionalSecret,
 
   // Firebase (public — safe to expose in browser bundles)
   NEXT_PUBLIC_FIREBASE_API_KEY: z.string().min(1),
@@ -15,11 +24,11 @@ const EnvSchema = z.object({
   // Firebase Admin — provide ONE of these for server-side access:
   //   FIREBASE_SERVICE_ACCOUNT  – JSON string of the service account key file
   // If neither is present the Admin SDK uses Application Default Credentials.
-  FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT: optionalSecret,
 
   // Optional Coinbase Commerce
-  COINBASE_COMMERCE_API_KEY: z.string().min(1).optional(),
-  COINBASE_COMMERCE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  COINBASE_COMMERCE_API_KEY: optionalSecret,
+  COINBASE_COMMERCE_WEBHOOK_SECRET: optionalSecret,
 });
 
 export type Env = z.infer<typeof EnvSchema>;

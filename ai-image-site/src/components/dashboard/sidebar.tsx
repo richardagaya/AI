@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Logo, Snowflake } from "@/components/brand/snowflake";
-import { cn } from "@/lib/utils";
+import { cn, firstNameOf } from "@/lib/utils";
 import type { DashboardView, StudioUser } from "./types";
 
 type NavItem = {
@@ -32,21 +32,21 @@ const NAV: NavGroup[] = [
     title: "Create",
     items: [
       { view: "image", label: "Generate Image", icon: ImagePlus },
-      { view: "video", label: "Generate Video", icon: Clapperboard, badge: "New", badgeTone: "solar" },
-      { view: "enhance", label: "Enhance & Upscale", icon: Sparkles, badge: "4K", badgeTone: "nova" },
+      { view: "video", label: "Generate Video", icon: Clapperboard },
+      { view: "enhance", label: "Enhance & Upscale", icon: Sparkles },
     ],
   },
   {
     title: "AI Influencers",
     items: [
       { view: "influencers", label: "My Influencers", icon: Users },
-      { view: "create-influencer", label: "Create Influencer", icon: Bot, badge: "Pro", badgeTone: "nova" },
+      { view: "create-influencer", label: "Create Influencer", icon: Bot },
     ],
   },
   {
     title: "Earn",
     items: [
-      { view: "affiliate", label: "Affiliate Program", icon: Gift, badge: "30%", badgeTone: "mint" },
+      { view: "affiliate", label: "Affiliate Program", icon: Gift },
     ],
   },
   {
@@ -184,10 +184,10 @@ export function Sidebar({
 
         <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nova to-solar-deep text-[0.72rem] font-bold text-white">
-            {user.email.slice(0, 1).toUpperCase()}
+            {firstNameOf(user).slice(0, 1).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1 truncate text-[0.76rem] text-frost-dim">
-            {user.email}
+            {user.displayName || user.email}
           </span>
           <button
             onClick={onLogout}

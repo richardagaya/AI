@@ -1,25 +1,25 @@
 "use client";
 
-import { Clapperboard, Film, MonitorPlay, Waves } from "lucide-react";
+import { Clapperboard, Film, ImagePlus, MonitorPlay } from "lucide-react";
 import { Composer } from "../composer";
 import { MediaWall } from "../media-wall";
 import type { GenerateHandlers } from "../types";
 
-const COMING = [
+const FEATURES = [
   {
     icon: Film,
     title: "Cinema-grade motion",
-    body: "Native 1080p clips with physically-based camera moves and motion blur.",
+    body: "Kling O3, Veo 3.1 and Seedance 2.0 with director-level camera control.",
+  },
+  {
+    icon: ImagePlus,
+    title: "Image to video",
+    body: "Upload a start frame and bring any still image to life.",
   },
   {
     icon: MonitorPlay,
-    title: "Up to 16 seconds",
-    body: "Extend clips shot-by-shot while keeping characters perfectly consistent.",
-  },
-  {
-    icon: Waves,
-    title: "Lip-sync & sound",
-    body: "Drop in a script — your characters speak with studio lip-sync.",
+    title: "Up to 10 seconds",
+    body: "Landscape, vertical or square — clips ready for any platform.",
   },
 ];
 
@@ -29,7 +29,7 @@ export function VideoView({ handlers }: { handlers: GenerateHandlers }) {
       <header className="mb-8 text-center">
         <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-nova/30 bg-nova/10 px-3.5 py-1.5 text-[0.64rem] font-bold tracking-[0.22em] uppercase text-nova-soft">
           <Clapperboard className="size-3.5" />
-          Video Studio · Early access
+          Video Studio
         </p>
         <h1 className="mx-auto mt-4 max-w-2xl text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
           Direct your own{" "}
@@ -46,7 +46,7 @@ export function VideoView({ handlers }: { handlers: GenerateHandlers }) {
       <Composer variant="video" handlers={handlers} />
 
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
-        {COMING.map((f) => (
+        {FEATURES.map((f) => (
           <div
             key={f.title}
             className="group relative overflow-hidden rounded-2xl border border-line/70 bg-ink-card/60 p-5 transition-colors hover:border-nova/40"
@@ -63,8 +63,8 @@ export function VideoView({ handlers }: { handlers: GenerateHandlers }) {
 
       <MediaWall
         className="mt-16"
-        title="Rendered in Motion One"
-        subtitle="Community clips generated this week"
+        title="Community clips"
+        subtitle="Videos rendered this week"
         videosOnly
       />
     </div>
