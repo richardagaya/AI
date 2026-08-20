@@ -81,8 +81,54 @@ Two things to know before deploying:
 - Behind a CDN that is not host-aware, responses must vary on `Host`.
 
 To exercise host routing locally, `*.localhost` resolves on macOS without
-touching `/etc/hosts`: build with the URLs set to `http://studio.minsuroai.localhost:3000`
-and friends, then browse those names.
+touching `/etc/hosts`. With the `NEXT_PUBLIC_*_URL` vars in `.env.local` pointed
+at `http://localhost:3000`, `http://studio.localhost:3000` and
+`http://learn.localhost:3000`, each surface is its own host — the same split
+production uses.
+
+## Deploy (Vercel + Cloudflare)
+
+One Vercel project serves every hostname. Do **not** create three Vercel apps.
+
+1. [vercel.com/new](https://vercel.com/new) → Import `richardagaya/AI`.
+2. **Root Directory** → `ai-image-site` (the Next app is a subfolder of the repo).
+3. Add the Production env vars from `.env.example` (`BASE_URL`, the three
+   `NEXT_PUBLIC_*_URL`s, and every `NEXT_PUBLIC_FIREBASE_*`). Leave
+   `NEXT_PUBLIC_API_URL` unset.
+4. Deploy once so Vercel issues a `*.vercel.app` URL. Confirm `/`, `/studio`
+   and `/learn` load on that URL.
+5. Project → Settings → Domains, add:
+   - `minsuroai.com`
+   - `www.minsuroai.com` (redirect to apex)
+   - `studio.minsuroai.com`
+   - `learn.minsuroai.com`
+6. In Cloudflare DNS, create the records Vercel shows. Keep each one **DNS
+   only** (grey cloud), not Proxied. Typical values:
+   - `minsuroai.com` → `A` `76.76.21.21`
+   - `www`, `studio`, `learn` → `CNAME` `cname.vercel-dns.com`
+7. Firebase Console → Authentication → Settings → Authorized domains, add
+   `minsuroai.com`, `www.minsuroai.com`, `studio.minsuroai.com`.
+
+After that, landing / studio / learn are live. **Generate will still stall on
+pending** until a worker and object storage (R2) exist. Sign-in, credits, and
+the learn site do not need that.
+
+## Working on a section
+
+Same repo, same deploy. People own folders, not separate apps:
+
+| Live host | Code they change |
+| --- | --- |
+| `minsuroai.com` | `src/app/page.tsx`, `src/components/landing/` |
+| `studio.minsuroai.com` | `src/app/studio/`, `src/components/dashboard/`, `src/components/auth/` |
+| `learn.minsuroai.com` | `src/app/learn/`, `src/components/learn/`, `src/lib/learn.ts` |
+| API (still same origin) | `src/app/api/` |
+
+Shared, so coordinate: `src/lib/site.ts`, `src/proxy.ts`, `src/app/layout.tsx`,
+`src/app/globals.css`, `src/components/ui/`, `src/components/brand/`.
+
+Locally, run `npm run dev` and open the matching host (`learn.localhost:3000`,
+etc.). A preview deploy from a branch still serves all three surfaces.
 
 ## Project layout
 
