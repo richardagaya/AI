@@ -50,10 +50,17 @@ export const PAGE_SURFACE_URL: Record<PageSurface, string> = {
 
 function hostOf(url: string): string {
   try {
-    return new URL(url).host.toLowerCase();
+    return hostnameOf(new URL(url).host);
   } catch {
     return "";
   }
+}
+
+/** Lowercase hostname with port stripped, so env URLs match incoming Host headers. */
+function hostnameOf(host: string): string {
+  const lowered = host.toLowerCase().trim();
+  if (lowered.startsWith("[")) return lowered;
+  return lowered.replace(/:\d+$/, "");
 }
 
 /**
@@ -84,15 +91,26 @@ const SURFACE_BY_HOST: ReadonlyMap<string, Surface> = (() => {
   return resolved;
 })();
 
-/** `null` means the host is unknown or shared, and routing should not intervene. */
+/**
+ * `null` means the host is unknown or shared, and routing should not intervene.
+ *
+ * Env URLs are the source of truth when they uniquely claim a host. If they
+ * were missing at build time (NEXT_PUBLIC_ vars are inlined then), fall back
+ * to the subdomain convention: studio.*, learn.*, api.*.
+ */
 export function surfaceForHost(host: string | null | undefined): Surface | null {
   if (!host) return null;
-  const normalised = host.toLowerCase();
-  return (
+  const normalised = hostnameOf(host);
+  const fromEnv =
     SURFACE_BY_HOST.get(normalised) ??
-    SURFACE_BY_HOST.get(normalised.replace(/^www\./, "")) ??
-    null
-  );
+    SURFACE_BY_HOST.get(normalised.replace(/^www\./, ""));
+  if (fromEnv) return fromEnv;
+
+  const bare = normalised.replace(/^www\./, "");
+  if (bare.startsWith("studio.")) return "studio";
+  if (bare.startsWith("learn.")) return "learn";
+  if (bare.startsWith("api.")) return "api";
+  return null;
 }
 
 /** Absolute URL of the studio, optionally opening straight into an auth mode. */

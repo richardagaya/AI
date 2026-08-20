@@ -25,7 +25,7 @@ const mono = Geist_Mono({
 export const metadata: Metadata = {
   title: "minsuro — uncensored AI image studio",
   description:
-    "Minsuro renders anime, fantasy and mature AI art in about thirty seconds. No content filters, no moderation queue, crypto checkout.",
+    "Minsuro renders anime, fantasy and mature AI art in about thirty seconds. No content filters, no moderation queue.",
   openGraph: {
     title: "minsuro — uncensored AI image studio",
     description:

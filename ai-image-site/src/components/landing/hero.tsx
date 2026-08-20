@@ -40,9 +40,9 @@ export function Hero({ startHref }: { startHref: string }) {
         className="absolute inset-0 -z-20 size-full object-cover opacity-45"
       />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(255,212,38,0.14),transparent_65%)]" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/60 via-ink/85 to-ink" />
-      <div className="absolute -top-32 -left-24 -z-10 size-[28rem] animate-drift rounded-full bg-solar/8 blur-[120px]" />
-      <div className="absolute top-1/3 -right-32 -z-10 size-[24rem] animate-drift rounded-full bg-solar-deep/8 blur-[120px] [animation-delay:-7s]" />
+      <div className="absolute inset-0 -z-10 bg-linear-to-b from-ink/60 via-ink/85 to-ink" />
+      <div className="absolute -top-32 -left-24 -z-10 size-112 animate-drift rounded-full bg-solar/8 blur-[120px]" />
+      <div className="absolute top-1/3 -right-32 -z-10 size-96 animate-drift rounded-full bg-solar-deep/8 blur-[120px] [animation-delay:-7s]" />
       <Snowfall />
 
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
@@ -109,7 +109,7 @@ export function Hero({ startHref }: { startHref: string }) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           style={{ rotateX, rotateY, transformPerspective: 1200 }}
-          className="relative z-10 hidden h-[34rem] lg:block xl:h-[38rem]"
+          className="relative z-10 hidden h-136 lg:block xl:h-148"
         >
           <motion.div
             style={{ x: shiftA }}

@@ -1,6 +1,6 @@
 # minsuro
 
-An uncensored AI image studio. Users sign in, buy credits with crypto, and submit
+An uncensored AI image studio. Users sign in, buy credits, and submit
 text-to-image or image-to-image jobs that a background worker renders through
 ComfyUI.
 
@@ -10,7 +10,7 @@ ComfyUI.
 - **Tailwind CSS v4** for styling, design tokens declared in `src/app/globals.css`
 - **Motion** for interaction and scroll animation, **lucide-react** for icons
 - **Firebase Auth** for accounts, **Firestore** for users, credits and jobs
-- **Coinbase Commerce** for credit top-ups
+- **Paystack** for credit top-ups
 - **ComfyUI** as the render backend, driven by `scripts/worker.ts`
 
 ## Getting started
@@ -48,8 +48,8 @@ Create `.env.local` with the variables validated in `src/lib/env.ts`:
 | `COMFYUI_URL` | ComfyUI endpoint (defaults to `http://127.0.0.1:8188`) |
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase web config (API key, auth domain, project id, storage bucket, messaging sender id, app id) |
 | `FIREBASE_SERVICE_ACCOUNT` | Service account JSON for the Admin SDK; falls back to Application Default Credentials |
-| `COINBASE_COMMERCE_API_KEY` | Optional, required for credit checkout |
-| `COINBASE_COMMERCE_WEBHOOK_SECRET` | Optional, verifies top-up webhooks |
+| `PAYSTACK_SECRET_KEY` | Secret key for checkout and webhook signatures |
+| `PAYSTACK_CURRENCY` | Checkout currency. Defaults to `NGN` |
 
 ## Domains
 

@@ -39,8 +39,10 @@ function readableAuthError(e: unknown, fallback: string) {
 
 export default function AppClient({
   initialAuthMode = null,
+  paymentReference = null,
 }: {
   initialAuthMode?: AuthMode | null;
+  paymentReference?: string | null;
 }) {
   const [user, setUser] = useState<StudioUser | null>(null);
   const [jobs, setJobs] = useState<StudioJob[]>([]);
@@ -101,8 +103,17 @@ export default function AppClient({
     return onAuthStateChanged(firebaseAuth, async (fbUser) => {
       firebaseUserRef.current = fbUser;
       if (fbUser) {
-        setAuthOpen(false);
-        await refreshMe(fbUser).catch(() => {});
+        try {
+          await refreshMe(fbUser);
+          setAuthOpen(false);
+        } catch (e: unknown) {
+          setError(
+            readableAuthError(
+              e,
+              "Signed in, but the studio could not load your account.",
+            ),
+          );
+        }
       } else {
         setUser(null);
         setJobs([]);
@@ -112,6 +123,39 @@ export default function AppClient({
   }, [refreshMe]);
 
   const userId = user?.id;
+
+  useEffect(() => {
+    if (!userId || !paymentReference) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await jsonFetch(apiUrl("/api/credits/verify"), {
+          method: "POST",
+          headers: {
+            ...(await authHeaders()),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reference: paymentReference }),
+        });
+        if (!cancelled) await refreshMe();
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Could not confirm payment");
+        }
+      } finally {
+        if (!cancelled && typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("reference");
+          url.searchParams.delete("trxref");
+          window.history.replaceState({}, "", url.pathname + url.search);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, paymentReference, authHeaders, refreshMe]);
+
   useEffect(() => {
     if (!userId) return;
     refreshJobs().catch(() => {});

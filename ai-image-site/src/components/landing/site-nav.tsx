@@ -55,9 +55,6 @@ export function SiteNav({
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8 lg:h-18">
           <a href="#top" className="flex items-center gap-3">
             <Logo spin />
-            <span className="hidden rounded-full border border-solar/25 px-2 py-0.5 text-[0.55rem] font-bold tracking-[0.16em] text-solar/80 sm:inline">
-              18+
-            </span>
           </a>
 
           <div className="hidden items-center gap-1 md:flex">

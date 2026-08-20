@@ -11,7 +11,7 @@ const STEPS = [
   {
     n: "02",
     title: "Load credits",
-    body: "Pay with crypto through Coinbase Commerce. Credits never expire, and a starter pack is enough for a full session.",
+    body: "Credits never expire, and a starter pack is enough for a full session.",
   },
   {
     n: "03",

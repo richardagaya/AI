@@ -31,13 +31,19 @@ function withoutPrefix(pathname: string, prefix: string): string {
   return pathname.slice(prefix.length) || "/";
 }
 
+function incomingHost(req: NextRequest): string | null {
+  const forwarded = req.headers.get("x-forwarded-host");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || null;
+  return req.headers.get("host");
+}
+
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   // The API is still same-origin for every surface, so it is never remapped.
   if (pathname.startsWith("/api")) return NextResponse.next();
 
-  const surface = surfaceForHost(req.headers.get("host"));
+  const surface = surfaceForHost(incomingHost(req));
 
   // Unknown or shared host: single-origin development. Serve paths as written.
   if (!surface) return NextResponse.next();

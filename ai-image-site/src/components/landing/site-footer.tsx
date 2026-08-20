@@ -50,9 +50,6 @@ export function SiteFooter() {
               An uncensored AI image studio for anime, fantasy and mature art.
               Built for creators who are done asking permission.
             </p>
-            <span className="mt-6 inline-flex rounded-full border border-solar/25 px-3 py-1 text-[0.6rem] font-bold tracking-[0.16em] text-solar/80">
-              18+ ONLY
-            </span>
           </div>
 
           {COLUMNS.map((col) => (
@@ -78,7 +75,7 @@ export function SiteFooter() {
 
         <div className="mt-16 flex flex-col gap-3 border-t border-line/60 pt-8 text-[0.74rem] text-frost-faint sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} minsuro. All characters are fictional.</p>
-          <p>Crypto payments only · Renders stay yours</p>
+          <p>Credits never expire · Renders stay yours</p>
         </div>
       </div>
 

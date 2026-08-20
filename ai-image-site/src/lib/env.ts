@@ -39,9 +39,15 @@ const EnvSchema = z.object({
   // If neither is present the Admin SDK uses Application Default Credentials.
   FIREBASE_SERVICE_ACCOUNT: optionalSecret,
 
-  // Optional Coinbase Commerce
-  COINBASE_COMMERCE_API_KEY: optionalSecret,
-  COINBASE_COMMERCE_WEBHOOK_SECRET: optionalSecret,
+  // Paystack (card, bank, USSD). Secret key signs webhooks too.
+  PAYSTACK_SECRET_KEY: optionalSecret,
+  PAYSTACK_CURRENCY: z.preprocess(
+    (v) =>
+      typeof v === "string" && v.trim() !== ""
+        ? v.trim().toUpperCase()
+        : undefined,
+    z.enum(["NGN", "USD", "GHS", "ZAR", "KES"]).optional(),
+  ),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

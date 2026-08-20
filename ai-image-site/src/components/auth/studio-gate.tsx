@@ -118,8 +118,7 @@ export function StudioGate({ onStart }: { onStart: (mode: AuthMode) => void }) {
           </div>
 
           <p className="mt-8 text-[0.72rem] leading-relaxed text-frost-faint">
-            18+ only. By continuing you confirm you are of legal age. New to
-            prompting?{" "}
+            New to prompting?{" "}
             <a href={LEARN_URL} className="text-frost-dim underline underline-offset-4 hover:text-solar">
               Start with the lessons
             </a>

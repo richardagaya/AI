@@ -3,21 +3,31 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import { getSession } from "@/lib/auth";
 import { STUDIO_URL } from "@/lib/site";
+import {
+  PAYSTACK_API,
+  amountMinorUnits,
+  paystackCurrency,
+} from "@/lib/paystack";
 
 const BodySchema = z.object({
   credits: z.number().int().min(10).max(100000),
 });
 
-const USD_PER_CREDIT = 0.05;
-
 export async function POST(req: Request) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!env.COINBASE_COMMERCE_API_KEY) {
+  if (!env.PAYSTACK_SECRET_KEY) {
     return NextResponse.json(
-      { error: "Crypto payments not configured" },
+      { error: "Payments are not configured" },
       { status: 501 },
+    );
+  }
+
+  if (!session.email) {
+    return NextResponse.json(
+      { error: "Your account needs an email to check out" },
+      { status: 400 },
     );
   }
 
@@ -26,43 +36,41 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
   const credits = parsed.data.credits;
-  const amountUSD = Math.round(credits * USD_PER_CREDIT * 100) / 100;
+  const currency = paystackCurrency(env.PAYSTACK_CURRENCY);
+  const amount = amountMinorUnits(credits, currency);
+  const reference = `minsuro_${session.userId.slice(0, 12)}_${Date.now()}`;
 
-  const res = await fetch("https://api.commerce.coinbase.com/charges", {
+  const res = await fetch(`${PAYSTACK_API}/transaction/initialize`, {
     method: "POST",
     headers: {
+      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
       "Content-Type": "application/json",
-      Accept: "application/json",
-      "X-CC-Api-Key": env.COINBASE_COMMERCE_API_KEY,
-      "X-CC-Version": "2018-03-22",
     },
     body: JSON.stringify({
-      name: `${credits} credits`,
-      description: "AI image generation credits",
-      pricing_type: "fixed_price",
-      local_price: { amount: amountUSD.toFixed(2), currency: "USD" },
+      email: session.email,
+      amount,
+      currency,
+      reference,
+      callback_url: STUDIO_URL,
       metadata: { userId: session.userId, credits },
-      // Buyers come back to the studio, which is where their credits are spent.
-      redirect_url: STUDIO_URL,
-      cancel_url: STUDIO_URL,
     }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
+  const data = (await res.json().catch(() => null)) as {
+    status?: boolean;
+    message?: string;
+    data?: { authorization_url?: string; reference?: string };
+  } | null;
+
+  if (!res.ok || !data?.status || !data.data?.authorization_url) {
     return NextResponse.json(
-      { error: "Failed to create charge", details: text.slice(0, 500) },
+      { error: "Failed to start checkout" },
       { status: 502 },
     );
   }
 
-  const data = (await res.json()) as Record<string, unknown>;
-  const chargeData = (data?.data as Record<string, unknown>) ?? {};
-  const hostedUrl = chargeData?.hosted_url;
-  const chargeId = chargeData?.id;
-  if (!hostedUrl || !chargeId) {
-    return NextResponse.json({ error: "Unexpected response from provider" }, { status: 502 });
-  }
-
-  return NextResponse.json({ hostedUrl, chargeId });
+  return NextResponse.json({
+    hostedUrl: data.data.authorization_url,
+    reference: data.data.reference ?? reference,
+  });
 }

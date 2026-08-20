@@ -20,8 +20,8 @@ const QA = [
     a: "No. They sit on your account until you spend them, and a failed job never consumes a credit.",
   },
   {
-    q: "Why crypto only?",
-    a: "Card processors routinely freeze accounts for adult art, which would mean your credits vanish overnight. Coinbase Commerce settles instantly and keeps the platform independent.",
+    q: "How do I buy credits?",
+    a: "Open the studio and tap Top up. Credits land on your account as soon as payment succeeds, and they never expire.",
   },
   {
     q: "Who owns the output?",

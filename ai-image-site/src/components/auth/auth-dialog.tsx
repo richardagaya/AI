@@ -198,8 +198,6 @@ export function AuthDialog({
               </Button>
 
               <p className="mt-6 text-center text-[0.68rem] leading-relaxed text-frost-faint">
-                18+ only. By continuing you confirm you are of legal age.
-                <br />
                 All generated characters are fictional.
               </p>
             </div>

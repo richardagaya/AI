@@ -11,11 +11,16 @@ export const metadata: Metadata = {
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; reference?: string; trxref?: string }>;
 }) {
-  const { mode } = await searchParams;
+  const { mode, reference, trxref } = await searchParams;
   const initialAuthMode: AuthMode | null =
     mode === "login" || mode === "signup" ? mode : null;
 
-  return <AppClient initialAuthMode={initialAuthMode} />;
+  return (
+    <AppClient
+      initialAuthMode={initialAuthMode}
+      paymentReference={reference || trxref || null}
+    />
+  );
 }

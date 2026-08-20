@@ -17,8 +17,8 @@ export function FinalCta({ startHref }: { startHref: string }) {
             poster={FINAL_CTA_BACKGROUND.poster}
             className="absolute inset-0 -z-20 size-full object-cover opacity-20"
           />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/70 via-ink/85 to-ink" />
-          <div className="absolute -bottom-40 left-1/2 -z-10 size-[36rem] -translate-x-1/2 rounded-full bg-solar/12 blur-[130px]" />
+          <div className="absolute inset-0 -z-10 bg-linear-to-b from-ink/70 via-ink/85 to-ink" />
+          <div className="absolute -bottom-40 left-1/2 -z-10 size-144 -translate-x-1/2 rounded-full bg-solar/12 blur-[130px]" />
 
           <Snowflake className="mx-auto size-9 animate-spin-slow text-solar" strokeWidth={5} />
 
@@ -44,7 +44,7 @@ export function FinalCta({ startHref }: { startHref: string }) {
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </a>
             <span className="text-[0.78rem] text-frost-faint">
-              18+ only · crypto checkout · no KYC
+              No subscription · credits never expire
             </span>
           </div>
         </div>

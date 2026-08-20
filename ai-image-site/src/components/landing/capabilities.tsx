@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Bitcoin,
+  CreditCard,
   Gauge,
   Images,
   Layers2,
@@ -32,9 +32,9 @@ const ITEMS = [
     body: "Full resolution downloads with no watermark and no licence games. Your gallery keeps every prompt for re-runs.",
   },
   {
-    icon: Bitcoin,
-    title: "Crypto checkout",
-    body: "Top up through Coinbase Commerce in a couple of clicks. No card processor deciding what art you are allowed to make.",
+    icon: CreditCard,
+    title: "Pay once, keep creating",
+    body: "Load credits in the studio whenever you need them. They never expire, and a failed job never spends one.",
   },
   {
     icon: Sparkles,

@@ -1,5 +1,5 @@
 /**
- * Firebase Admin SDK — optional, only needed for the Coinbase webhook and
+ * Firebase Admin SDK — optional, only needed for the Paystack webhook and
  * the background worker.  The main web-app routes use firestoreRest.ts instead.
  *
  * Initialisation is attempted lazily; callers receive null if credentials
