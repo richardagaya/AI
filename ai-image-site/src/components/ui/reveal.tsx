@@ -13,20 +13,33 @@ export function Reveal({
   className,
   delay = 0,
   as = "div",
+  immediate = false,
 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
   as?: "div" | "section" | "li" | "span";
+  /**
+   * Play on mount instead of on scroll. Use for above-the-fold content, which
+   * would otherwise be served at opacity 0 and stay blank until the viewport
+   * observer fires.
+   */
+  immediate?: boolean;
 }) {
   const Comp = motion[as];
+  const trigger = immediate
+    ? { animate: "shown" as const }
+    : {
+        whileInView: "shown" as const,
+        viewport: { once: true, margin: "-80px" },
+      };
+
   return (
     <Comp
       className={cn(className)}
       variants={variants}
       initial="hidden"
-      whileInView="shown"
-      viewport={{ once: true, margin: "-80px" }}
+      {...trigger}
       transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}

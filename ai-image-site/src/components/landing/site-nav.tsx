@@ -4,19 +4,29 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/snowflake";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button-styles";
 import { cn } from "@/lib/utils";
 
-const LINKS = [
+const SECTIONS = [
   { href: "#showcase", label: "Showcase" },
   { href: "#studio", label: "Studio" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },
 ];
 
-export function SiteNav({ onSignIn }: { onSignIn: () => void }) {
+export function SiteNav({
+  startHref,
+  signInHref,
+  learnHref,
+}: {
+  startHref: string;
+  signInHref: string;
+  learnHref: string;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const links = [...SECTIONS, { href: learnHref, label: "Learn" }];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -51,7 +61,7 @@ export function SiteNav({ onSignIn }: { onSignIn: () => void }) {
           </a>
 
           <div className="hidden items-center gap-1 md:flex">
-            {LINKS.map((l) => (
+            {links.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
@@ -63,17 +73,25 @@ export function SiteNav({ onSignIn }: { onSignIn: () => void }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onSignIn}
-              className="hidden sm:inline-flex"
+            <a
+              href={signInHref}
+              className={buttonStyles({
+                variant: "ghost",
+                size: "sm",
+                className: "hidden sm:inline-flex",
+              })}
             >
               Sign in
-            </Button>
-            <Button size="sm" onClick={onSignIn} className="hidden sm:inline-flex">
+            </a>
+            <a
+              href={startHref}
+              className={buttonStyles({
+                size: "sm",
+                className: "hidden sm:inline-flex",
+              })}
+            >
               Start creating
-            </Button>
+            </a>
             <button
               type="button"
               aria-label={open ? "Close menu" : "Open menu"}
@@ -96,7 +114,7 @@ export function SiteNav({ onSignIn }: { onSignIn: () => void }) {
             className="fixed inset-0 z-50 bg-ink/95 px-6 pt-24 backdrop-blur-xl md:hidden"
           >
             <div className="flex flex-col gap-1">
-              {LINKS.map((l, i) => (
+              {links.map((l, i) => (
                 <motion.a
                   key={l.href}
                   href={l.href}
@@ -111,25 +129,15 @@ export function SiteNav({ onSignIn }: { onSignIn: () => void }) {
               ))}
             </div>
             <div className="mt-8 flex flex-col gap-3">
-              <Button
-                size="lg"
-                onClick={() => {
-                  setOpen(false);
-                  onSignIn();
-                }}
-              >
+              <a href={startHref} className={buttonStyles({ size: "lg" })}>
                 Start creating
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => {
-                  setOpen(false);
-                  onSignIn();
-                }}
+              </a>
+              <a
+                href={signInHref}
+                className={buttonStyles({ variant: "outline", size: "lg" })}
               >
                 Sign in
-              </Button>
+              </a>
             </div>
           </motion.div>
         )}

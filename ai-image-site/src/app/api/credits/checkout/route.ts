@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
 import { getSession } from "@/lib/auth";
+import { STUDIO_URL } from "@/lib/site";
 
 const BodySchema = z.object({
   credits: z.number().int().min(10).max(100000),
@@ -41,8 +42,9 @@ export async function POST(req: Request) {
       pricing_type: "fixed_price",
       local_price: { amount: amountUSD.toFixed(2), currency: "USD" },
       metadata: { userId: session.userId, credits },
-      redirect_url: `${env.BASE_URL}/`,
-      cancel_url: `${env.BASE_URL}/`,
+      // Buyers come back to the studio, which is where their credits are spent.
+      redirect_url: STUDIO_URL,
+      cancel_url: STUDIO_URL,
     }),
   });
 

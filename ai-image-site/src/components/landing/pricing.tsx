@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button-styles";
 import { Reveal, SectionLabel } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ const PACKS = [
   },
 ];
 
-export function Pricing({ onStart }: { onStart: () => void }) {
+export function Pricing({ startHref }: { startHref: string }) {
   return (
     <section
       id="pricing"
@@ -98,14 +98,16 @@ export function Pricing({ onStart }: { onStart: () => void }) {
                 ))}
               </ul>
 
-              <Button
-                variant={p.featured ? "solar" : "outline"}
-                size="lg"
-                onClick={onStart}
-                className="mt-8 w-full"
+              <a
+                href={startHref}
+                className={buttonStyles({
+                  variant: p.featured ? "solar" : "outline",
+                  size: "lg",
+                  className: "mt-8 w-full",
+                })}
               >
                 Get {p.credits} credits
-              </Button>
+              </a>
             </div>
           </Reveal>
         ))}

@@ -1,13 +1,23 @@
 import { Logo } from "@/components/brand/snowflake";
+import { learnUrl, studioUrl } from "@/lib/site";
 
 const COLUMNS = [
   {
     title: "Product",
     links: [
       { label: "Showcase", href: "#showcase" },
-      { label: "Studio", href: "#studio" },
+      { label: "Open studio", href: studioUrl() },
       { label: "Pricing", href: "#pricing" },
       { label: "FAQ", href: "#faq" },
+    ],
+  },
+  {
+    title: "Learn",
+    links: [
+      { label: "All lessons", href: learnUrl() },
+      { label: "Prompt anatomy", href: learnUrl("prompt-anatomy") },
+      { label: "Choosing a model", href: learnUrl("choosing-a-model") },
+      { label: "Image to image", href: learnUrl("image-to-image") },
     ],
   },
   {
@@ -33,7 +43,7 @@ export function SiteFooter() {
   return (
     <footer className="relative overflow-hidden border-t border-line/60">
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(3,minmax(0,1fr))]">
+        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,minmax(0,1fr))]">
           <div>
             <Logo />
             <p className="mt-5 max-w-xs text-[0.86rem] leading-relaxed text-frost-faint">

@@ -6,9 +6,22 @@ const optionalSecret = z.preprocess(
   z.string().min(1).optional(),
 );
 
+/** Blank or unset both mean "not configured". */
+const optionalUrl = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.string().url().optional(),
+);
+
 const EnvSchema = z.object({
   BASE_URL: z.string().url(),
   COMFYUI_URL: z.string().url().default("http://127.0.0.1:8188"),
+
+  // Public origin of each surface. Leave unset for single-origin local dev,
+  // where /, /studio and /learn are served from one host. See src/lib/site.ts.
+  NEXT_PUBLIC_SITE_URL: optionalUrl,
+  NEXT_PUBLIC_STUDIO_URL: optionalUrl,
+  NEXT_PUBLIC_LEARN_URL: optionalUrl,
+  NEXT_PUBLIC_API_URL: optionalUrl,
 
   // fal.ai API key (server-side only) — used by the generation worker
   FAL_KEY: optionalSecret,

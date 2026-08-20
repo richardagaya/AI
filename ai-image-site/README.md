@@ -21,6 +21,15 @@ npm run dev      # app on http://localhost:3000
 npm run worker   # job worker, run alongside the app
 ```
 
+Locally every surface is served from one origin:
+
+| Path | Surface |
+| --- | --- |
+| `/` | marketing landing page |
+| `/studio` | the authenticated studio |
+| `/learn` | prompting lessons |
+| `/api/*` | JSON API |
+
 The worker polls Firestore for queued jobs, hydrates the workflow templates in
 `workflows/`, queues them on ComfyUI, then writes the output image back to
 storage and flips the job to `succeeded` or `failed`.
@@ -31,22 +40,65 @@ Create `.env.local` with the variables validated in `src/lib/env.ts`:
 
 | Variable | Purpose |
 | --- | --- |
-| `BASE_URL` | Public origin, used for checkout redirects |
+| `BASE_URL` | Public origin of the deployment |
+| `NEXT_PUBLIC_SITE_URL` | Marketing site origin — unset for local dev |
+| `NEXT_PUBLIC_STUDIO_URL` | Studio origin — unset for local dev |
+| `NEXT_PUBLIC_LEARN_URL` | Learn site origin — unset for local dev |
+| `NEXT_PUBLIC_API_URL` | API origin. Leave unset until the API sends CORS headers |
 | `COMFYUI_URL` | ComfyUI endpoint (defaults to `http://127.0.0.1:8188`) |
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase web config (API key, auth domain, project id, storage bucket, messaging sender id, app id) |
 | `FIREBASE_SERVICE_ACCOUNT` | Service account JSON for the Admin SDK; falls back to Application Default Credentials |
 | `COINBASE_COMMERCE_API_KEY` | Optional, required for credit checkout |
 | `COINBASE_COMMERCE_WEBHOOK_SECRET` | Optional, verifies top-up webhooks |
 
+## Domains
+
+One deployment serves four hostnames. `src/proxy.ts` reads the incoming `Host`
+header and rewrites it onto the matching internal path, so `studio.minsuroai.com/`
+renders `/studio` and `learn.minsuroai.com/prompt-anatomy` renders
+`/learn/prompt-anatomy`. Paths belonging to another surface are redirected to
+the host that owns them.
+
+| Host | Serves | Notes |
+| --- | --- | --- |
+| `minsuroai.com` | landing page | indexed |
+| `studio.minsuroai.com` | the studio | the only place users sign in; `noindex` |
+| `learn.minsuroai.com` | lessons | static, indexed |
+| `api.minsuroai.com` | `/api/*` only | other paths redirect to the marketing site |
+
+Host routing only activates once the `NEXT_PUBLIC_*_URL` vars point at
+*different* hosts. While they are unset — or all resolve to the same origin —
+the proxy passes requests straight through and the internal paths are served as
+written, which is what makes local development work without DNS.
+
+Two things to know before deploying:
+
+- These are `NEXT_PUBLIC_` vars, so they are inlined at build time. They must be
+  set in the build environment, not only at runtime.
+- Firebase Auth sessions are scoped to one origin, which is why sign-in lives
+  only on the studio host. Add every hostname to the Firebase console's
+  authorized domains list.
+- Behind a CDN that is not host-aware, responses must vary on `Host`.
+
+To exercise host routing locally, `*.localhost` resolves on macOS without
+touching `/etc/hosts`: build with the URLs set to `http://studio.minsuroai.localhost:3000`
+and friends, then browse those names.
+
 ## Project layout
 
 ```
-src/app/                 routes and API handlers
-src/app/AppClient.tsx    auth state, wires the landing page to the studio
+src/proxy.ts             maps hostnames onto internal routes
+src/app/page.tsx         marketing landing page
+src/app/studio/          authenticated studio, auth state in AppClient.tsx
+src/app/learn/           lesson index and lesson pages
+src/app/api/             API handlers
 src/components/brand/    snowflake mark and wordmark
 src/components/landing/  marketing sections (hero, showcase, pricing, FAQ…)
-src/components/studio/   authenticated generation console
+src/components/learn/    learn nav, footer and lesson renderer
+src/components/dashboard/ authenticated generation console
 src/components/ui/       button, form controls, media card, reveal
+src/lib/site.ts          surface URLs and host resolution
+src/lib/learn.ts         lesson content
 src/lib/                 auth, Firestore, ComfyUI, storage, media manifest
 scripts/worker.ts        render worker
 workflows/               ComfyUI workflow templates

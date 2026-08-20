@@ -3,13 +3,13 @@
 import { useRef } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { ArrowRight, Play } from "lucide-react";
-import { Button, buttonStyles } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button-styles";
 import { MediaCard } from "@/components/ui/media-card";
 import { LazyVideo } from "@/components/ui/lazy-video";
 import { Snowfall } from "@/components/landing/snowfall";
 import { HERO_BACKGROUND, SHOWCASE } from "@/lib/media";
 
-export function Hero({ onStart }: { onStart: () => void }) {
+export function Hero({ startHref }: { startHref: string }) {
   const frame = useRef<HTMLDivElement>(null);
   const px = useMotionValue(0);
   const py = useMotionValue(0);
@@ -80,10 +80,13 @@ export function Hero({ onStart }: { onStart: () => void }) {
             transition={{ duration: 0.8, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
           >
-            <Button size="lg" onClick={onStart} className="group">
+            <a
+              href={startHref}
+              className={buttonStyles({ size: "lg", className: "group" })}
+            >
               Start creating
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-            </Button>
+            </a>
             <a
               href="#showcase"
               className={buttonStyles({ variant: "outline", size: "lg" })}

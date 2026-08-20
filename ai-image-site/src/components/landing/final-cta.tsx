@@ -1,13 +1,13 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button-styles";
 import { Reveal } from "@/components/ui/reveal";
 import { LazyVideo } from "@/components/ui/lazy-video";
 import { Snowflake } from "@/components/brand/snowflake";
 import { FINAL_CTA_BACKGROUND } from "@/lib/media";
 
-export function FinalCta({ onStart }: { onStart: () => void }) {
+export function FinalCta({ startHref }: { startHref: string }) {
   return (
     <section className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 sm:pb-32">
       <Reveal>
@@ -33,10 +33,16 @@ export function FinalCta({ onStart }: { onStart: () => void }) {
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" onClick={onStart} className="group w-full sm:w-auto">
+            <a
+              href={startHref}
+              className={buttonStyles({
+                size: "lg",
+                className: "group w-full sm:w-auto",
+              })}
+            >
               Start creating
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-            </Button>
+            </a>
             <span className="text-[0.78rem] text-frost-faint">
               18+ only · crypto checkout · no KYC
             </span>

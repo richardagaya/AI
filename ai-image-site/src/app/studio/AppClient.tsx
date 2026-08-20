@@ -11,8 +11,9 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
+import { apiUrl } from "@/lib/site";
 import { AuthDialog, type AuthMode } from "@/components/auth/auth-dialog";
-import { LandingPage } from "@/components/landing/landing-page";
+import { StudioGate, StudioSplash } from "@/components/auth/studio-gate";
 import {
   Dashboard,
   type StudioJob,
@@ -36,12 +37,19 @@ function readableAuthError(e: unknown, fallback: string) {
   return msg.replace("Firebase: ", "").replace(/ \(auth\/.*\)\.?$/, "");
 }
 
-export default function AppClient() {
+export default function AppClient({
+  initialAuthMode = null,
+}: {
+  initialAuthMode?: AuthMode | null;
+}) {
   const [user, setUser] = useState<StudioUser | null>(null);
   const [jobs, setJobs] = useState<StudioJob[]>([]);
 
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("signup");
+  /** False until Firebase has replayed any persisted session for this origin. */
+  const [authResolved, setAuthResolved] = useState(false);
+
+  const [authOpen, setAuthOpen] = useState(initialAuthMode !== null);
+  const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode ?? "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -67,9 +75,10 @@ export default function AppClient() {
       return;
     }
     const token = await target.getIdToken();
-    const res = await jsonFetch<{ user: StudioUser | null }>("/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await jsonFetch<{ user: StudioUser | null }>(
+      apiUrl("/api/auth/me"),
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
     setUser(
       res.user
         ? {
@@ -82,7 +91,7 @@ export default function AppClient() {
 
   const refreshJobs = useCallback(async () => {
     if (!firebaseUserRef.current) return;
-    const res = await jsonFetch<{ jobs: StudioJob[] }>("/api/jobs", {
+    const res = await jsonFetch<{ jobs: StudioJob[] }>(apiUrl("/api/jobs"), {
       headers: await authHeaders(),
     });
     setJobs(res.jobs);
@@ -98,6 +107,7 @@ export default function AppClient() {
         setUser(null);
         setJobs([]);
       }
+      setAuthResolved(true);
     });
   }, [refreshMe]);
 
@@ -180,7 +190,7 @@ export default function AppClient() {
     try {
       const headers = await authHeaders();
       const res = await jsonFetch<{ hostedUrl: string }>(
-        "/api/credits/checkout",
+        apiUrl("/api/credits/checkout"),
         {
           method: "POST",
           headers: { ...headers, "Content-Type": "application/json" },
@@ -211,7 +221,7 @@ export default function AppClient() {
       if (settings.strength != null) form.set("strength", String(settings.strength));
       if (image) form.set("image", image);
 
-      await jsonFetch("/api/generate", {
+      await jsonFetch(apiUrl("/api/generate"), {
         method: "POST",
         headers: await authHeaders(),
         body: form,
@@ -228,6 +238,8 @@ export default function AppClient() {
       setBusy(false);
     }
   }
+
+  if (!authResolved) return <StudioSplash />;
 
   if (user) {
     return (
@@ -253,7 +265,7 @@ export default function AppClient() {
 
   return (
     <>
-      <LandingPage onStart={() => openAuth("signup")} />
+      <StudioGate onStart={openAuth} />
       <AuthDialog
         open={authOpen}
         mode={authMode}

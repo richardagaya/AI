@@ -43,8 +43,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
+    // Extensions such as Grammarly inject attributes on html/body before React
+    // hydrates, which otherwise reports a mismatch on every page.
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${space.variable} ${serif.variable} ${mono.variable}`}
     >
       <head>
@@ -54,7 +57,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://assets.mixkit.co" />
         <link rel="dns-prefetch" href="https://image.civitai.com" />
       </head>
-      <body className="antialiased">{children}</body>
+      <body suppressHydrationWarning className="antialiased">
+        {children}
+      </body>
     </html>
   );
 }
