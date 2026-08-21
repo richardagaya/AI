@@ -15,6 +15,8 @@ export type StudioJob = {
   error: string | null;
   createdAt: string;
   outputImagePath: string | null;
+  /** Public CDN URL of the finished output (R2), when storage is R2-backed. */
+  outputUrl?: string | null;
   kind?: "image" | "video";
   aspect?: string;
   duration?: string;
@@ -39,18 +41,4 @@ export type GenerateSettings = {
   duration?: string;
   camera?: string;
   strength?: number;
-};
-
-export type GenerateHandlers = {
-  prompt: string;
-  negativePrompt: string;
-  mode: "text2img" | "img2img";
-  image: File | null;
-  busy: boolean;
-  error: string | null;
-  onPromptChange: (v: string) => void;
-  onNegativePromptChange: (v: string) => void;
-  onModeChange: (v: "text2img" | "img2img") => void;
-  onImageChange: (f: File | null) => void;
-  onGenerate: (settings: GenerateSettings) => void;
 };

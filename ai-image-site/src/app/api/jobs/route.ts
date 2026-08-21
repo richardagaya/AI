@@ -23,6 +23,7 @@ export async function GET(req: Request) {
     model: d.model,
     prompt: d.prompt,
     outputImagePath: d.outputImagePath ?? null,
+    outputUrl: d.outputUrl ?? null,
     outputKind: d.outputKind ?? null,
     kind: d.kind ?? null,
     aspect: d.aspect ?? null,

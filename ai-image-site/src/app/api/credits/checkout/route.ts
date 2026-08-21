@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { env } from "@/lib/env";
 import { getSession } from "@/lib/auth";
 import { STUDIO_URL } from "@/lib/site";
 import {
   PAYSTACK_API,
   amountMinorUnits,
   paystackCurrency,
+  paystackSecretKey,
 } from "@/lib/paystack";
 
 const BodySchema = z.object({
@@ -17,7 +17,8 @@ export async function POST(req: Request) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!env.PAYSTACK_SECRET_KEY) {
+  const secret = paystackSecretKey();
+  if (!secret) {
     return NextResponse.json(
       { error: "Payments are not configured" },
       { status: 501 },
@@ -36,14 +37,14 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
   const credits = parsed.data.credits;
-  const currency = paystackCurrency(env.PAYSTACK_CURRENCY);
+  const currency = paystackCurrency(process.env.PAYSTACK_CURRENCY);
   const amount = amountMinorUnits(credits, currency);
   const reference = `minsuro_${session.userId.slice(0, 12)}_${Date.now()}`;
 
   const res = await fetch(`${PAYSTACK_API}/transaction/initialize`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      Authorization: `Bearer ${secret}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -63,8 +64,10 @@ export async function POST(req: Request) {
   } | null;
 
   if (!res.ok || !data?.status || !data.data?.authorization_url) {
+    const msg = data?.message?.trim();
+    console.error("[paystack] initialize failed", res.status, msg);
     return NextResponse.json(
-      { error: "Failed to start checkout" },
+      { error: msg || "Failed to start checkout" },
       { status: 502 },
     );
   }

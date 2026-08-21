@@ -23,8 +23,17 @@ const EnvSchema = z.object({
   NEXT_PUBLIC_LEARN_URL: optionalUrl,
   NEXT_PUBLIC_API_URL: optionalUrl,
 
-  // fal.ai API key (server-side only) — used by the generation worker
+  // fal.ai API key (server-side only) — used by /api/generate and the fal webhook
   FAL_KEY: optionalSecret,
+
+  // Cloudflare R2 object storage / CDN (server-side only).
+  // When unset, generated files fall back to local disk storage.
+  R2_ACCOUNT_ID: optionalSecret,
+  R2_ACCESS_KEY_ID: optionalSecret,
+  R2_SECRET_ACCESS_KEY: optionalSecret,
+  R2_BUCKET: optionalSecret,
+  // Public origin attached to the bucket, e.g. https://cdn.example.com
+  R2_PUBLIC_BASE_URL: optionalUrl,
 
   // Firebase (public — safe to expose in browser bundles)
   NEXT_PUBLIC_FIREBASE_API_KEY: z.string().min(1),
@@ -52,8 +61,40 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
-export const env: Env = (() => {
-  const parsed = EnvSchema.safeParse(process.env);
+/**
+ * Next/Turbopack only inlines env vars that are referenced as
+ * `process.env.SOME_NAME`. Passing the whole `process.env` object into Zod
+ * leaves secrets like PAYSTACK_SECRET_KEY undefined at runtime.
+ */
+function rawEnv() {
+  return {
+    BASE_URL: process.env.BASE_URL,
+    COMFYUI_URL: process.env.COMFYUI_URL,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_STUDIO_URL: process.env.NEXT_PUBLIC_STUDIO_URL,
+    NEXT_PUBLIC_LEARN_URL: process.env.NEXT_PUBLIC_LEARN_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    FAL_KEY: process.env.FAL_KEY,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_BUCKET: process.env.R2_BUCKET,
+    R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:
+      process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    FIREBASE_SERVICE_ACCOUNT: process.env.FIREBASE_SERVICE_ACCOUNT,
+    PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+    PAYSTACK_CURRENCY: process.env.PAYSTACK_CURRENCY,
+  };
+}
+
+export function getEnv(): Env {
+  const parsed = EnvSchema.safeParse(rawEnv());
   if (!parsed.success) {
     const fields = Object.keys(parsed.error.flatten().fieldErrors);
     throw new Error(
@@ -61,4 +102,11 @@ export const env: Env = (() => {
     );
   }
   return parsed.data;
-})();
+}
+
+/** Reads env on every property access so .env.local edits are not frozen at boot. */
+export const env: Env = new Proxy({} as Env, {
+  get(_target, prop: string) {
+    return getEnv()[prop as keyof Env];
+  },
+});

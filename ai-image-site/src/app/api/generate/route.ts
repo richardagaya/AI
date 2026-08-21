@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import { getSession } from "@/lib/auth";
-import { fsCreateJobTx } from "@/lib/firestoreRest";
+import { fsCreateJobTx, fsUpdate } from "@/lib/firestoreRest";
+import {
+  prepareFalJob,
+  submitFalJob,
+  waitForFalJob,
+} from "@/lib/fal";
+import { jobFailedFields, jobSucceededFields } from "@/lib/jobResult";
 import { isPromptDisallowed } from "@/lib/moderation";
 import { saveUploadedFile } from "@/lib/storage";
 import {
@@ -11,9 +18,42 @@ import {
   resolveDuration,
 } from "@/lib/fal-models";
 
+export const maxDuration = 60;
+
+/**
+ * fal will not deliver webhooks to loopback. When BASE_URL is public we
+ * enqueue and return; locally we wait in this request instead.
+ */
+function publicWebhookUrl(jobId: string): string | null {
+  let url: URL;
+  try {
+    url = new URL("/api/fal/webhook", env.BASE_URL);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local")
+  ) {
+    return null;
+  }
+  url.searchParams.set("jobId", jobId);
+  return url.href;
+}
+
 export async function POST(req: Request) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!env.FAL_KEY) {
+    return NextResponse.json(
+      { error: "Generation is not configured (missing FAL_KEY)" },
+      { status: 501 },
+    );
+  }
 
   const form = await req.formData();
   const prompt = String(form.get("prompt") ?? "").trim();
@@ -70,7 +110,6 @@ export async function POST(req: Request) {
     : null;
   const costCredits = costFor(model, withImage);
 
-  // Save upload before the transaction (async I/O not allowed inside Firestore tx)
   const upload = imageFile ? await saveUploadedFile(imageFile) : null;
 
   const jobId = crypto.randomUUID();
@@ -93,8 +132,11 @@ export async function POST(req: Request) {
         camera: kind === "video" ? camera : null,
         strength,
         inputImagePath: upload?.fullPath ?? null,
+        inputImageUrl: upload?.url ?? null,
         outputImagePath: null,
+        outputUrl: null,
         outputKind: null,
+        falRequestId: null,
         costCredits,
         error: null,
         createdAt: now,
@@ -103,8 +145,6 @@ export async function POST(req: Request) {
       costCredits,
       session.token,
     );
-
-    return NextResponse.json({ job: { id: jobId, status: "pending", costCredits, createdAt: now } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "UNKNOWN";
     if (msg === "INSUFFICIENT_CREDITS") {
@@ -115,4 +155,66 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
   }
+
+  const prepared = await prepareFalJob(model, {
+    prompt,
+    negativePrompt,
+    aspect,
+    duration: durationSeconds ?? undefined,
+    camera,
+    strength: strength ?? undefined,
+    inputImagePath: upload?.fullPath,
+    inputImageUrl: upload?.url,
+  }).catch(async (e) => {
+    await fsUpdate(
+      "jobs",
+      jobId,
+      jobFailedFields(e instanceof Error ? e.message : "Failed to start generation"),
+      session.token,
+    ).catch(() => {});
+    return null;
+  });
+
+  if (!prepared) {
+    return NextResponse.json({ error: "Failed to start generation" }, { status: 502 });
+  }
+
+  const webhookUrl = publicWebhookUrl(jobId);
+
+  try {
+    if (webhookUrl) {
+      const { requestId } = await submitFalJob(
+        prepared.endpoint,
+        prepared.input,
+        webhookUrl,
+      );
+      await fsUpdate(
+        "jobs",
+        jobId,
+        {
+          status: "running",
+          falRequestId: requestId,
+          updatedAt: new Date().toISOString(),
+        },
+        session.token,
+      );
+    } else {
+      const output = await waitForFalJob(
+        prepared.endpoint,
+        prepared.input,
+        prepared.kind,
+      );
+      await fsUpdate("jobs", jobId, await jobSucceededFields(output), session.token);
+    }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Generation failed";
+    await fsUpdate("jobs", jobId, jobFailedFields(message), session.token).catch(
+      () => {},
+    );
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
+  return NextResponse.json({
+    job: { id: jobId, status: webhookUrl ? "running" : "succeeded", costCredits, createdAt: now },
+  });
 }

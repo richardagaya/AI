@@ -22,10 +22,19 @@ import {
   modelsFor,
   UI_ASPECTS,
 } from "@/lib/fal-models";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Dropdown, DropdownOption } from "@/components/ui/dropdown";
+import {
+  busyAtom,
+  errorAtom,
+  generateAtom,
+  imageAtom,
+  modeAtom,
+  negativePromptAtom,
+  promptAtom,
+} from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ModelPicker } from "./model-picker";
-import type { GenerateHandlers } from "./types";
 
 const SUGGESTIONS = [
   "frost sorceress, silver hair, falling snow, cinematic key light…",
@@ -67,26 +76,14 @@ function AspectGlyph({ id, active }: { id: string; active?: boolean }) {
   );
 }
 
-export function Composer({
-  variant,
-  handlers,
-}: {
-  variant: "image" | "video";
-  handlers: GenerateHandlers;
-}) {
-  const {
-    prompt,
-    negativePrompt,
-    mode,
-    image,
-    busy,
-    error,
-    onPromptChange,
-    onNegativePromptChange,
-    onModeChange,
-    onImageChange,
-    onGenerate,
-  } = handlers;
+export function Composer({ variant }: { variant: "image" | "video" }) {
+  const [prompt, setPrompt] = useAtom(promptAtom);
+  const [negativePrompt, setNegativePrompt] = useAtom(negativePromptAtom);
+  const [mode, setMode] = useAtom(modeAtom);
+  const [image, setImage] = useAtom(imageAtom);
+  const busy = useAtomValue(busyAtom);
+  const error = useAtomValue(errorAtom);
+  const onGenerate = useSetAtom(generateAtom);
 
   const isVideo = variant === "video";
   const kind = isVideo ? "video" : "image";
@@ -145,27 +142,27 @@ export function Composer({
 
   function pickImage(f: File | null) {
     if (!f) return;
-    onImageChange(f);
-    if (!isVideo) onModeChange("img2img");
+    setImage(f);
+    if (!isVideo) setMode("img2img");
   }
 
   function clearImage() {
-    onImageChange(null);
+    setImage(null);
     if (fileRef.current) fileRef.current.value = "";
-    if (!isVideo) onModeChange("text2img");
+    if (!isVideo) setMode("text2img");
   }
 
   function surprise() {
     const next =
       SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
-    onPromptChange(next);
+    setPrompt(next);
     textareaRef.current?.focus();
   }
 
   function enhance() {
     if (!prompt.trim()) return surprise();
     if (enhanced) return;
-    onPromptChange(`${prompt.replace(/[,.\s]+$/, "")}, ${QUALITY_TAGS}`);
+    setPrompt(`${prompt.replace(/[,.\s]+$/, "")}, ${QUALITY_TAGS}`);
   }
 
   function generate() {
@@ -208,7 +205,7 @@ export function Composer({
           <textarea
             ref={textareaRef}
             value={prompt}
-            onChange={(e) => onPromptChange(e.target.value)}
+            onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canGenerate && !busy) {
                 e.preventDefault();
@@ -432,7 +429,7 @@ export function Composer({
                 </span>
                 <input
                   value={negativePrompt}
-                  onChange={(e) => onNegativePromptChange(e.target.value)}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
                   placeholder="blurry, deformed, low quality"
                   className="h-11 w-full rounded-xl border border-line bg-ink-soft/80 px-4 text-sm text-frost outline-none transition-all placeholder:text-frost-faint focus:border-solar/70 focus:ring-3 focus:ring-solar/12"
                 />
@@ -444,7 +441,7 @@ export function Composer({
                 <select
                   value={mode}
                   onChange={(e) =>
-                    onModeChange(e.target.value as "text2img" | "img2img")
+                    setMode(e.target.value as "text2img" | "img2img")
                   }
                   className="h-11 w-full rounded-xl border border-line bg-ink-soft/80 px-3 text-sm text-frost outline-none transition-all focus:border-solar/70 focus:ring-3 focus:ring-solar/12"
                 >

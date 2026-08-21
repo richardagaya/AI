@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
 import { AnimatePresence, motion } from "motion/react";
 import { Menu } from "lucide-react";
 import { Logo, Snowflake } from "@/components/brand/snowflake";
+import { dashboardViewAtom, userAtom } from "@/lib/store";
 import { Sidebar } from "./sidebar";
 import { AffiliateView } from "./views/affiliate-view";
 import { CreateInfluencerView } from "./views/create-influencer-view";
@@ -13,46 +15,22 @@ import { InfluencersView } from "./views/influencers-view";
 import { LibraryView } from "./views/library-view";
 import { VideoView } from "./views/video-view";
 import { ExploreView } from "./views/explore-view";
-import type {
-  DashboardView,
-  GenerateHandlers,
-  StudioJob,
-  StudioUser,
-} from "./types";
+import type { DashboardView } from "./types";
 
 export type { StudioJob, StudioUser } from "./types";
 
-export function Dashboard({
-  user,
-  jobs,
-  busy,
-  onTopUp,
-  onLogout,
-  ...handlers
-}: {
-  user: StudioUser;
-  jobs: StudioJob[];
-  busy: boolean;
-  onTopUp: () => void;
-  onLogout: () => void;
-} & GenerateHandlers) {
-  const [view, setView] = useState<DashboardView>("image");
+export function Dashboard() {
+  const user = useAtomValue(userAtom);
+  const view = useAtomValue(dashboardViewAtom);
+  const setView = useSetAtom(dashboardViewAtom);
   const [navOpen, setNavOpen] = useState(false);
 
-  const navigate = useCallback((v: DashboardView) => {
+  if (!user) return null;
+
+  const navigate = (v: DashboardView) => {
     setView(v);
     setNavOpen(false);
-  }, []);
-
-  const usePrompt = useCallback(
-    (prompt: string) => {
-      handlers.onPromptChange(prompt);
-      navigate("image");
-    },
-    [handlers, navigate],
-  );
-
-  const generateHandlers: GenerateHandlers = { ...handlers, busy };
+  };
 
   return (
     <div className="flex h-dvh overflow-hidden bg-ink">
@@ -68,14 +46,7 @@ export function Dashboard({
 
       {/* Desktop sidebar */}
       <aside className="relative z-20 hidden w-[268px] shrink-0 border-r border-line/50 lg:block">
-        <Sidebar
-          user={user}
-          activeView={view}
-          busy={busy}
-          onNavigate={navigate}
-          onTopUp={onTopUp}
-          onLogout={onLogout}
-        />
+        <Sidebar activeView={view} onNavigate={navigate} />
       </aside>
 
       {/* Mobile drawer */}
@@ -96,14 +67,7 @@ export function Dashboard({
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-line/60 bg-ink-soft lg:hidden"
             >
-              <Sidebar
-                user={user}
-                activeView={view}
-                busy={busy}
-                onNavigate={navigate}
-                onTopUp={onTopUp}
-                onLogout={onLogout}
-              />
+              <Sidebar activeView={view} onNavigate={navigate} />
             </motion.aside>
           </>
         )}
@@ -136,16 +100,8 @@ export function Dashboard({
               exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
-              {view === "image" && (
-                <ImageView
-                  user={user}
-                  jobs={jobs}
-                  handlers={generateHandlers}
-                  onNavigate={navigate}
-                  onUsePrompt={usePrompt}
-                />
-              )}
-              {view === "video" && <VideoView handlers={generateHandlers} />}
+              {view === "image" && <ImageView onNavigate={navigate} />}
+              {view === "video" && <VideoView />}
               {view === "enhance" && <EnhanceView />}
               {view === "influencers" && (
                 <InfluencersView onNavigate={navigate} />
@@ -153,9 +109,9 @@ export function Dashboard({
               {view === "create-influencer" && (
                 <CreateInfluencerView onNavigate={navigate} />
               )}
-              {view === "affiliate" && <AffiliateView user={user} />}
-              {view === "library" && <LibraryView jobs={jobs} />}
-              {view === "explore" && <ExploreView onUsePrompt={usePrompt} />}
+              {view === "affiliate" && <AffiliateView />}
+              {view === "library" && <LibraryView />}
+              {view === "explore" && <ExploreView />}
             </motion.div>
           </AnimatePresence>
         </main>

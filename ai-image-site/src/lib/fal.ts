@@ -34,6 +34,8 @@ export type RunSettings = {
   strength?: number;
   /** Local path of the uploaded reference image, if any */
   inputImagePath?: string | null;
+  /** Public URL of the reference image (R2 CDN) — preferred over inputImagePath */
+  inputImageUrl?: string | null;
 };
 
 export type FalOutput = {
@@ -110,6 +112,37 @@ function buildImageInput(
   }
 
   return input;
+}
+
+export type PreparedFalJob = {
+  endpoint: string;
+  input: Record<string, unknown>;
+  kind: "image" | "video";
+};
+
+/** Resolve endpoint + fal input (uploads a local reference image if needed). */
+export async function prepareFalJob(
+  model: FalModelDef,
+  settings: RunSettings,
+): Promise<PreparedFalJob> {
+  ensureConfigured();
+
+  const hasInput = Boolean(settings.inputImageUrl ?? settings.inputImagePath);
+  const withImage = Boolean(hasInput && model.endpoints.image);
+  const endpoint = withImage ? model.endpoints.image! : model.endpoints.text;
+
+  const imageUrl = settings.inputImageUrl
+    ? settings.inputImageUrl
+    : settings.inputImagePath
+      ? await uploadInputImage(settings.inputImagePath)
+      : null;
+
+  const input =
+    model.kind === "video"
+      ? buildVideoInput(model, settings, imageUrl)
+      : buildImageInput(model, settings, imageUrl);
+
+  return { endpoint, input, kind: model.kind };
 }
 
 function buildVideoInput(
@@ -199,50 +232,68 @@ function readableFalError(e: unknown): Error {
   return new Error(raw);
 }
 
-/** Upload reference image (if any), run the model, return the output URL. */
-export async function runFalGeneration(
-  model: FalModelDef,
-  settings: RunSettings,
-): Promise<FalOutput> {
+/** Pull a CDN URL out of a fal image/video payload. */
+export function parseFalPayload(
+  kind: "image" | "video",
+  data: Record<string, unknown> | null | undefined,
+): FalOutput {
+  if (!data) throw new Error("fal.ai returned an empty payload");
+
+  if (kind === "video") {
+    const video = data.video as { url?: string; content_type?: string } | undefined;
+    if (!video?.url) throw new Error("fal.ai returned no video");
+    return {
+      kind: "video",
+      url: video.url,
+      contentType: video.content_type ?? "video/mp4",
+    };
+  }
+
+  const images = data.images as
+    | Array<{ url?: string; content_type?: string }>
+    | undefined;
+  const first = images?.[0];
+  if (!first?.url) throw new Error("fal.ai returned no image");
+  return {
+    kind: "image",
+    url: first.url,
+    contentType: first.content_type ?? "image/png",
+  };
+}
+
+/** Enqueue on fal and return immediately. Result arrives at webhookUrl. */
+export async function submitFalJob(
+  endpoint: string,
+  input: Record<string, unknown>,
+  webhookUrl: string,
+): Promise<{ requestId: string }> {
   ensureConfigured();
-
-  const withImage = Boolean(settings.inputImagePath && model.endpoints.image);
-  const endpoint = withImage ? model.endpoints.image! : model.endpoints.text;
-
-  let result;
   try {
-    const imageUrl = settings.inputImagePath
-      ? await uploadInputImage(settings.inputImagePath)
-      : null;
-
-    const input =
-      model.kind === "video"
-        ? buildVideoInput(model, settings, imageUrl)
-        : buildImageInput(model, settings, imageUrl);
-
-    result = await fal.subscribe(endpoint, {
+    const { request_id } = await fal.queue.submit(endpoint, {
       input,
-      logs: true,
-      onQueueUpdate: (u) => {
-        if (u.status === "IN_PROGRESS") {
-          u.logs?.forEach((l) => console.log(`[fal] ${l.message}`));
-        }
-      },
+      webhookUrl,
     });
+    if (!request_id) throw new Error("fal.ai did not return a request id");
+    return { requestId: request_id };
   } catch (e) {
     throw readableFalError(e);
   }
+}
 
-  const data = result.data as Record<string, unknown>;
-
-  if (model.kind === "video") {
-    const video = data.video as { url?: string; content_type?: string } | undefined;
-    if (!video?.url) throw new Error("fal.ai returned no video");
-    return { kind: "video", url: video.url, contentType: video.content_type ?? "video/mp4" };
+/**
+ * Wait in-process for the result. Used only when the webhook URL is not
+ * publicly reachable (local `localhost`), because fal will not deliver there.
+ */
+export async function waitForFalJob(
+  endpoint: string,
+  input: Record<string, unknown>,
+  kind: "image" | "video",
+): Promise<FalOutput> {
+  ensureConfigured();
+  try {
+    const result = await fal.subscribe(endpoint, { input, logs: false });
+    return parseFalPayload(kind, result.data as Record<string, unknown>);
+  } catch (e) {
+    throw readableFalError(e);
   }
-
-  const images = data.images as Array<{ url?: string; content_type?: string }> | undefined;
-  const first = images?.[0];
-  if (!first?.url) throw new Error("fal.ai returned no image");
-  return { kind: "image", url: first.url, contentType: first.content_type ?? "image/png" };
 }

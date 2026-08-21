@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAtomValue } from "jotai";
 import { Search } from "lucide-react";
 import { GalleryGrid } from "../gallery-grid";
+import { jobsAtom } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import type { StudioJob } from "../types";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -13,7 +14,8 @@ const FILTERS = [
   { id: "failed", label: "Failed" },
 ] as const;
 
-export function LibraryView({ jobs }: { jobs: StudioJob[] }) {
+export function LibraryView() {
+  const jobs = useAtomValue(jobsAtom);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all");
   const [query, setQuery] = useState("");
 

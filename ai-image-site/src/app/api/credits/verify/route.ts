@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { env } from "@/lib/env";
 import { getSession } from "@/lib/auth";
 import { getAdminDb, getAdminInitError } from "@/lib/firebaseAdmin";
 import {
   PAYSTACK_API,
   grantCreditsForReference,
+  paystackSecretKey,
   readPaystackMetadata,
 } from "@/lib/paystack";
 
@@ -17,7 +17,8 @@ export async function POST(req: Request) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!env.PAYSTACK_SECRET_KEY) {
+  const secret = paystackSecretKey();
+  if (!secret) {
     return NextResponse.json({ error: "Payments are not configured" }, { status: 501 });
   }
 
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
   const reference = parsed.data.reference;
   const res = await fetch(
     `${PAYSTACK_API}/transaction/verify/${encodeURIComponent(reference)}`,
-    { headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` } },
+    { headers: { Authorization: `Bearer ${secret}` } },
   );
 
   const payload = (await res.json().catch(() => null)) as {

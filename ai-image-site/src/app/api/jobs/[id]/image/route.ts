@@ -25,10 +25,23 @@ export async function GET(
   if (!doc.exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const d = doc.data;
-  if (d.userId !== session.userId || d.status !== "succeeded" || !d.outputImagePath) {
+  const outputUrl = (d.outputUrl as string | null) ?? null;
+  if (
+    d.userId !== session.userId ||
+    d.status !== "succeeded" ||
+    (!d.outputImagePath && !outputUrl)
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // R2-backed outputs: the browser fetches the file straight from the CDN edge.
+  if (outputUrl) {
+    return NextResponse.redirect(outputUrl, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
+  // Legacy local-disk outputs
   const outputPath = d.outputImagePath as string;
   const bytes = await readFile(outputPath);
   const contentType =

@@ -1,15 +1,14 @@
 "use client";
 
 import { Compass } from "lucide-react";
+import { useSetAtom } from "jotai";
 import { MediaCard } from "@/components/ui/media-card";
 import { SHOWCASE } from "@/lib/media";
+import { usePromptAtom } from "@/lib/store";
 import { MediaWall } from "../media-wall";
 
-export function ExploreView({
-  onUsePrompt,
-}: {
-  onUsePrompt: (prompt: string) => void;
-}) {
+export function ExploreView() {
+  const onUsePrompt = useSetAtom(usePromptAtom);
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-10 pb-16 sm:px-8">
       <header>
@@ -33,7 +32,6 @@ export function ExploreView({
         className="mt-10"
         title="Trending now"
         subtitle="Auto-refreshing feed of community renders"
-        onUsePrompt={onUsePrompt}
       />
 
       <div className="mt-12 columns-2 gap-4 space-y-4 md:columns-3 xl:columns-4">

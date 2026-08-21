@@ -1,11 +1,13 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { useAtomValue } from "jotai";
 import { Composer } from "../composer";
 import { GalleryGrid } from "../gallery-grid";
 import { MediaWall } from "../media-wall";
+import { jobsAtom, userAtom } from "@/lib/store";
 import { firstNameOf } from "@/lib/utils";
-import type { DashboardView, GenerateHandlers, StudioJob, StudioUser } from "../types";
+import type { DashboardView } from "../types";
 
 function greeting() {
   const h = new Date().getHours();
@@ -16,19 +18,13 @@ function greeting() {
 }
 
 export function ImageView({
-  user,
-  jobs,
-  handlers,
   onNavigate,
-  onUsePrompt,
 }: {
-  user: StudioUser;
-  jobs: StudioJob[];
-  handlers: GenerateHandlers;
   onNavigate: (v: DashboardView) => void;
-  onUsePrompt: (prompt: string) => void;
 }) {
-  const firstName = firstNameOf(user);
+  const user = useAtomValue(userAtom);
+  const jobs = useAtomValue(jobsAtom);
+  const firstName = user ? firstNameOf(user) : "creator";
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-10 pb-16 sm:px-8">
@@ -49,7 +45,7 @@ export function ImageView({
         </p>
       </header>
 
-      <Composer variant="image" handlers={handlers} />
+      <Composer variant="image" />
 
       {/* Recent creations */}
       <section className="mt-14">
@@ -78,10 +74,7 @@ export function ImageView({
       </section>
 
       {/* Community media wall */}
-      <MediaWall
-        className="mt-16"
-        onUsePrompt={onUsePrompt}
-      />
+      <MediaWall className="mt-16" />
     </div>
   );
 }

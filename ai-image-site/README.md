@@ -1,8 +1,7 @@
 # minsuro
 
 An uncensored AI image studio. Users sign in, buy credits, and submit
-text-to-image or image-to-image jobs that a background worker renders through
-ComfyUI.
+text-to-image or image-to-image jobs that fal.ai renders asynchronously.
 
 ## Stack
 
@@ -11,14 +10,13 @@ ComfyUI.
 - **Motion** for interaction and scroll animation, **lucide-react** for icons
 - **Firebase Auth** for accounts, **Firestore** for users, credits and jobs
 - **Paystack** for credit top-ups
-- **ComfyUI** as the render backend, driven by `scripts/worker.ts`
+- **fal.ai** queue + webhook for generation (no always-on worker)
 
 ## Getting started
 
 ```bash
 npm install
 npm run dev      # app on http://localhost:3000
-npm run worker   # job worker, run alongside the app
 ```
 
 Locally every surface is served from one origin:
@@ -30,9 +28,11 @@ Locally every surface is served from one origin:
 | `/learn` | prompting lessons |
 | `/api/*` | JSON API |
 
-The worker polls Firestore for queued jobs, hydrates the workflow templates in
-`workflows/`, queues them on ComfyUI, then writes the output image back to
-storage and flips the job to `succeeded` or `failed`.
+`/api/generate` deducts credits, then submits the job to the fal.ai queue with
+a webhook URL (`/api/fal/webhook`). fal POSTs the result when it is done; we
+store the file on R2 (or local disk) and mark the job succeeded. On localhost
+fal cannot reach the webhook, so generate waits for the result in the same
+request instead.
 
 ## Environment
 
@@ -40,14 +40,14 @@ Create `.env.local` with the variables validated in `src/lib/env.ts`:
 
 | Variable | Purpose |
 | --- | --- |
-| `BASE_URL` | Public origin of the deployment |
+| `BASE_URL` | Public origin fal uses as the webhook target. Must not be localhost in production |
 | `NEXT_PUBLIC_SITE_URL` | Marketing site origin — unset for local dev |
 | `NEXT_PUBLIC_STUDIO_URL` | Studio origin — unset for local dev |
 | `NEXT_PUBLIC_LEARN_URL` | Learn site origin — unset for local dev |
 | `NEXT_PUBLIC_API_URL` | API origin. Leave unset until the API sends CORS headers |
-| `COMFYUI_URL` | ComfyUI endpoint (defaults to `http://127.0.0.1:8188`) |
+| `FAL_KEY` | fal.ai API key — required for generation |
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase web config (API key, auth domain, project id, storage bucket, messaging sender id, app id) |
-| `FIREBASE_SERVICE_ACCOUNT` | Service account JSON for the Admin SDK; falls back to Application Default Credentials |
+| `FIREBASE_SERVICE_ACCOUNT` | Service account JSON for Admin SDK (Paystack + fal webhooks) |
 | `PAYSTACK_SECRET_KEY` | Secret key for checkout and webhook signatures |
 | `PAYSTACK_CURRENCY` | Checkout currency. Defaults to `NGN` |
 
@@ -109,9 +109,10 @@ One Vercel project serves every hostname. Do **not** create three Vercel apps.
 7. Firebase Console → Authentication → Settings → Authorized domains, add
    `minsuroai.com`, `www.minsuroai.com`, `studio.minsuroai.com`.
 
-After that, landing / studio / learn are live. **Generate will still stall on
-pending** until a worker and object storage (R2) exist. Sign-in, credits, and
-the learn site do not need that.
+After that, landing / studio / learn are live. Generation needs `FAL_KEY`,
+`FIREBASE_SERVICE_ACCOUNT` (so the fal webhook can write the job), and for
+production files, the R2 vars. Sign-in, credits, and the learn site do not
+need R2.
 
 ## Working on a section
 
@@ -145,9 +146,7 @@ src/components/dashboard/ authenticated generation console
 src/components/ui/       button, form controls, media card, reveal
 src/lib/site.ts          surface URLs and host resolution
 src/lib/learn.ts         lesson content
-src/lib/                 auth, Firestore, ComfyUI, storage, media manifest
-scripts/worker.ts        render worker
-workflows/               ComfyUI workflow templates
+src/lib/                 auth, Firestore, fal, storage, media manifest
 ```
 
 ## Costs

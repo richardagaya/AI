@@ -1,18 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useSetAtom } from "jotai";
 import { Flame, Play } from "lucide-react";
 import { MediaCard } from "@/components/ui/media-card";
 import { SHOWCASE, type Media } from "@/lib/media";
+import { usePromptAtom } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-function WallCard({
-  media,
-  onUsePrompt,
-}: {
-  media: Media;
-  onUsePrompt?: (prompt: string) => void;
-}) {
+function WallCard({ media }: { media: Media }) {
+  const onUsePrompt = useSetAtom(usePromptAtom);
   return (
     <div className="group/card relative w-52 shrink-0 sm:w-60">
       <MediaCard
@@ -27,7 +24,7 @@ function WallCard({
         </span>
       )}
       <button
-        onClick={() => onUsePrompt?.(media.prompt)}
+        onClick={() => onUsePrompt(media.prompt)}
         className={cn(
           "absolute inset-x-3 bottom-3 cursor-pointer rounded-xl border border-line/60 bg-ink/80 p-3 text-left backdrop-blur-xl",
           "translate-y-2 opacity-0 transition-all duration-300 group-hover/card:translate-y-0 group-hover/card:opacity-100",
@@ -59,13 +56,11 @@ export function MediaWall({
   title = "Live from the community",
   subtitle = "Trending renders from creators this hour",
   videosOnly = false,
-  onUsePrompt,
   className,
 }: {
   title?: string;
   subtitle?: string;
   videosOnly?: boolean;
-  onUsePrompt?: (prompt: string) => void;
   className?: string;
 }) {
   const [paused, setPaused] = useState(false);
@@ -107,11 +102,7 @@ export function MediaWall({
             style={paused ? { animationPlayState: "paused" } : undefined}
           >
             {row.map((media, j) => (
-              <WallCard
-                key={`${media.id}-${j}`}
-                media={media}
-                onUsePrompt={onUsePrompt}
-              />
+              <WallCard key={`${media.id}-${j}`} media={media} />
             ))}
           </div>
         ))}

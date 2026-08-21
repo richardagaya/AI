@@ -13,9 +13,11 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Logo, Snowflake } from "@/components/brand/snowflake";
+import { busyAtom, logoutAtom, topUpAtom, userAtom } from "@/lib/store";
 import { cn, firstNameOf } from "@/lib/utils";
-import type { DashboardView, StudioUser } from "./types";
+import type { DashboardView } from "./types";
 
 type NavItem = {
   view: DashboardView;
@@ -112,20 +114,18 @@ function NavButton({
 }
 
 export function Sidebar({
-  user,
   activeView,
-  busy,
   onNavigate,
-  onTopUp,
-  onLogout,
 }: {
-  user: StudioUser;
   activeView: DashboardView;
-  busy: boolean;
   onNavigate: (v: DashboardView) => void;
-  onTopUp: () => void;
-  onLogout: () => void;
 }) {
+  const user = useAtomValue(userAtom);
+  const busy = useAtomValue(busyAtom);
+  const topUp = useSetAtom(topUpAtom);
+  const logout = useSetAtom(logoutAtom);
+
+  if (!user) return null;
   const creditPct = Math.min(100, (user.creditBalance / 200) * 100);
 
   return (
@@ -173,7 +173,7 @@ export function Sidebar({
             />
           </div>
           <button
-            onClick={onTopUp}
+            onClick={() => topUp()}
             disabled={busy}
             className="mt-3.5 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-solar py-2 text-[0.76rem] font-bold text-on-solar transition-all hover:shadow-[0_8px_28px_-8px_rgba(255,212,38,0.6)] disabled:opacity-50"
           >
@@ -190,7 +190,7 @@ export function Sidebar({
             {user.displayName || user.email}
           </span>
           <button
-            onClick={onLogout}
+            onClick={() => logout()}
             disabled={busy}
             aria-label="Log out"
             className="cursor-pointer rounded-lg p-1.5 text-frost-faint transition-colors hover:bg-white/5 hover:text-red-400 disabled:opacity-50"

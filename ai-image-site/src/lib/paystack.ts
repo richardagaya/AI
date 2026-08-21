@@ -3,11 +3,20 @@ import { getAdminDb, FieldValue, Timestamp } from "@/lib/firebaseAdmin";
 
 export const PAYSTACK_API = "https://api.paystack.co";
 
+/** Secret from .env.local — read live so a stale env snapshot cannot hide it. */
+export function paystackSecretKey(): string | undefined {
+  const key = process.env.PAYSTACK_SECRET_KEY?.trim();
+  return key || undefined;
+}
+
 /** USD price used when PAYSTACK_CURRENCY=USD. */
 export const USD_PER_CREDIT = 0.05;
 
 /** Naira price used when PAYSTACK_CURRENCY=NGN (Paystack default). */
 export const NGN_PER_CREDIT = 75;
+
+/** Kenyan shilling price used when PAYSTACK_CURRENCY=KES. ~$0.05/credit. */
+export const KES_PER_CREDIT = 7;
 
 export function paystackCurrency(raw?: string): string {
   return (raw?.trim() || "NGN").toUpperCase();
@@ -15,8 +24,12 @@ export function paystackCurrency(raw?: string): string {
 
 /** Amount in the currency's smallest unit (kobo, cents, …). */
 export function amountMinorUnits(credits: number, currency: string): number {
-  if (paystackCurrency(currency) === "USD") {
+  const code = paystackCurrency(currency);
+  if (code === "USD") {
     return Math.round(credits * USD_PER_CREDIT * 100);
+  }
+  if (code === "KES") {
+    return Math.round(credits * KES_PER_CREDIT * 100);
   }
   return Math.round(credits * NGN_PER_CREDIT * 100);
 }

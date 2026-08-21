@@ -3,7 +3,6 @@
 import { Clapperboard, Film, ImagePlus, MonitorPlay } from "lucide-react";
 import { Composer } from "../composer";
 import { MediaWall } from "../media-wall";
-import type { GenerateHandlers } from "../types";
 
 const FEATURES = [
   {
@@ -23,7 +22,7 @@ const FEATURES = [
   },
 ];
 
-export function VideoView({ handlers }: { handlers: GenerateHandlers }) {
+export function VideoView() {
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-10 pb-16 sm:px-8">
       <header className="mb-8 text-center">
@@ -43,7 +42,7 @@ export function VideoView({ handlers }: { handlers: GenerateHandlers }) {
         </p>
       </header>
 
-      <Composer variant="video" handlers={handlers} />
+      <Composer variant="video" />
 
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
         {FEATURES.map((f) => (

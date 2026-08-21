@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { env } from "@/lib/env";
 import { getAdminDb, getAdminInitError } from "@/lib/firebaseAdmin";
 import {
   grantCreditsForReference,
+  paystackSecretKey,
   readPaystackMetadata,
   verifyPaystackSignature,
 } from "@/lib/paystack";
 
 export async function POST(req: Request) {
-  if (!env.PAYSTACK_SECRET_KEY) {
+  const secret = paystackSecretKey();
+  if (!secret) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 501 });
   }
 
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   const ok = verifyPaystackSignature(
     rawBody,
     req.headers.get("x-paystack-signature"),
-    env.PAYSTACK_SECRET_KEY,
+    secret,
   );
   if (!ok) return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
 

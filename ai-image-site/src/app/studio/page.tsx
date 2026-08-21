@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Provider as JotaiProvider } from "jotai";
 import AppClient from "./AppClient";
 import type { AuthMode } from "@/components/auth/auth-dialog";
 
@@ -18,9 +19,11 @@ export default async function StudioPage({
     mode === "login" || mode === "signup" ? mode : null;
 
   return (
-    <AppClient
-      initialAuthMode={initialAuthMode}
-      paymentReference={reference || trxref || null}
-    />
+    <JotaiProvider>
+      <AppClient
+        initialAuthMode={initialAuthMode}
+        paymentReference={reference || trxref || null}
+      />
+    </JotaiProvider>
   );
 }
