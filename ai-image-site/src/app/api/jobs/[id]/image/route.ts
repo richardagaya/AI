@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getSession } from "@/lib/auth";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 import { fsGet } from "@/lib/firestoreRest";
 
 const CONTENT_TYPE_BY_EXT: Record<string, string> = {
@@ -12,36 +13,48 @@ const CONTENT_TYPE_BY_EXT: Record<string, string> = {
   ".mp4": "video/mp4",
 };
 
+async function loadJob(
+  id: string,
+  req: Request,
+): Promise<Record<string, unknown> | null> {
+  const adminDb = getAdminDb();
+  if (adminDb) {
+    const snap = await adminDb.collection("jobs").doc(id).get();
+    return snap.exists ? (snap.data() ?? {}) : null;
+  }
+  const session = await getSession(req);
+  if (!session) return null;
+  const doc = await fsGet("jobs", id, session.token);
+  if (!doc.exists || doc.data.userId !== session.userId) return null;
+  return doc.data;
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession(req);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   const { id } = await params;
-  const doc = await fsGet("jobs", id, session.token);
+  const d = await loadJob(id, req);
 
-  if (!doc.exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!d) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const d = doc.data;
   const outputUrl = (d.outputUrl as string | null) ?? null;
-  if (
-    d.userId !== session.userId ||
-    d.status !== "succeeded" ||
-    (!d.outputImagePath && !outputUrl)
-  ) {
+  if (d.status !== "succeeded" || (!d.outputImagePath && !outputUrl)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // R2-backed outputs: the browser fetches the file straight from the CDN edge.
+  // Public CDN URL — <img> / <video> cannot send the auth header.
   if (outputUrl) {
     return NextResponse.redirect(outputUrl, {
-      headers: { "Cache-Control": "private, no-store" },
+      headers: { "Cache-Control": "public, max-age=31536000, immutable" },
     });
   }
 
-  // Legacy local-disk outputs
+  const session = await getSession(req);
+  if (!session || d.userId !== session.userId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const outputPath = d.outputImagePath as string;
   const bytes = await readFile(outputPath);
   const contentType =

@@ -15,6 +15,10 @@ const STATUS_STYLES: Record<string, string> = {
   pending: "text-frost-dim bg-white/5 border-line",
 };
 
+function jobMediaSrc(job: StudioJob): string {
+  return job.outputUrl || `/api/jobs/${job.id}/image`;
+}
+
 export function GalleryGrid({
   jobs,
   emptyTitle = "Nothing rendered yet",
@@ -50,17 +54,16 @@ export function GalleryGrid({
             {job.status === "succeeded" ? (
               isVideo ? (
                 <video
-                  src={`/api/jobs/${job.id}/image`}
+                  src={jobMediaSrc(job)}
                   controls
                   preload="metadata"
                   className="aspect-video w-full bg-black object-cover"
                 />
               ) : (
-                // Served straight from the authenticated job route, so it skips
-                // the image optimizer.
+                // R2 CDN URL when present; otherwise the job image route.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`/api/jobs/${job.id}/image`}
+                  src={jobMediaSrc(job)}
                   alt={job.prompt}
                   loading="lazy"
                   className="aspect-2/3 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
@@ -90,7 +93,7 @@ export function GalleryGrid({
             {job.status === "succeeded" && (
               <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <a
-                  href={`/api/jobs/${job.id}/image`}
+                  href={jobMediaSrc(job)}
                   download
                   title="Download"
                   className="cursor-pointer rounded-full border border-white/10 bg-ink/80 p-2 text-frost backdrop-blur-md transition-colors hover:text-solar"

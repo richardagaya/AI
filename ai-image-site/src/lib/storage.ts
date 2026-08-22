@@ -76,13 +76,23 @@ export async function persistRemoteFile(
   const ext = extForOutput(kind, contentType);
 
   if (isR2Configured()) {
-    const outputUrl = await uploadToR2(
-      bytes,
-      "outputs",
-      ext,
-      contentType ?? (kind === "video" ? "video/mp4" : "image/png"),
-    );
-    return { outputUrl, outputImagePath: null };
+    try {
+      const outputUrl = await uploadToR2(
+        bytes,
+        "outputs",
+        ext,
+        contentType ?? (kind === "video" ? "video/mp4" : "image/png"),
+      );
+      return { outputUrl, outputImagePath: null };
+    } catch (e) {
+      console.error("[storage] R2 upload failed, using source URL", e);
+      return { outputUrl: url, outputImagePath: null };
+    }
+  }
+
+  if (process.env.VERCEL) {
+    // Local disk is not durable on serverless.
+    return { outputUrl: url, outputImagePath: null };
   }
 
   await ensureStorageDirs();

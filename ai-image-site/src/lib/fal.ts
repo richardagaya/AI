@@ -290,6 +290,38 @@ export function parseFalPayload(
   throw new Error("fal.ai returned no image");
 }
 
+export type FalQueueStatus = "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED";
+
+export async function getFalQueueStatus(
+  endpoint: string,
+  requestId: string,
+): Promise<FalQueueStatus | "FAILED"> {
+  ensureConfigured();
+  try {
+    const status = await fal.queue.status(endpoint, { requestId, logs: false });
+    const value = String(status.status ?? "").toUpperCase();
+    if (value === "COMPLETED") return "COMPLETED";
+    if (value === "IN_QUEUE" || value === "IN_PROGRESS") return value;
+    return "FAILED";
+  } catch (e) {
+    throw readableFalError(e);
+  }
+}
+
+export async function getFalQueueResult(
+  endpoint: string,
+  requestId: string,
+  kind: "image" | "video",
+): Promise<FalOutput> {
+  ensureConfigured();
+  try {
+    const result = await fal.queue.result(endpoint, { requestId });
+    return parseFalPayload(kind, result.data as Record<string, unknown>);
+  } catch (e) {
+    throw readableFalError(e);
+  }
+}
+
 /** Enqueue on fal and return immediately. Result arrives at webhookUrl. */
 export async function submitFalJob(
   endpoint: string,
