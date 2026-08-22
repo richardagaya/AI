@@ -63,12 +63,23 @@ function buildImageInput(
   s: RunSettings,
   imageUrl: string | null,
 ): Record<string, unknown> {
+  if (model.family === "birefnet") {
+    if (!imageUrl) throw new Error("BiRefNet needs an image to cut out");
+    return {
+      image_url: imageUrl,
+      output_format: "png",
+      refine_foreground: true,
+    };
+  }
+
   const size =
     model.sizes?.[resolveAspect(model, s.aspect)] ??
     Object.values(model.sizes ?? {})[0];
   const withImage = Boolean(imageUrl && model.endpoints.image);
   const usesImageUrls =
-    model.family === "gemini" || model.family === "seedream";
+    model.family === "gemini" ||
+    model.family === "seedream" ||
+    model.id === "flux-2-klein-9b";
 
   const input: Record<string, unknown> = {
     prompt: s.prompt,
@@ -83,7 +94,7 @@ function buildImageInput(
     if (usesImageUrls) input.image_urls = [imageUrl];
     else {
       input.image_url = imageUrl;
-      if (model.family === "flux") {
+      if (model.family === "flux" && model.id !== "flux-2-klein-9b") {
         input.strength = Math.min(1, Math.max(0.01, s.strength ?? 0.8));
       }
     }
@@ -94,12 +105,18 @@ function buildImageInput(
     model.family === "gemini" ||
     model.family === "openai" ||
     model.family === "grok" ||
-    model.family === "qwen"
+    model.family === "qwen" ||
+    model.family === "zimage"
   ) {
     input.output_format = "png";
   }
 
-  if (model.family === "flux" || model.family === "qwen" || model.family === "seedream") {
+  if (
+    model.family === "flux" ||
+    model.family === "qwen" ||
+    model.family === "seedream" ||
+    model.family === "zimage"
+  ) {
     input.enable_safety_checker = true;
   }
 
@@ -188,8 +205,8 @@ function buildVideoInput(
     input.generate_audio = false;
   } else if (model.family === "flux") {
     input.duration = seconds;
-    input.resolution = "720p";
-    input.generate_audio = false;
+    if (model.id !== "flux-3-video-draft") input.resolution = "720p";
+    input.generate_audio = model.id === "flux-3-video-draft";
   } else if (model.family === "omni") {
     input.duration = seconds;
   } else if (model.family === "grok") {
@@ -253,12 +270,24 @@ export function parseFalPayload(
     | Array<{ url?: string; content_type?: string }>
     | undefined;
   const first = images?.[0];
-  if (!first?.url) throw new Error("fal.ai returned no image");
-  return {
-    kind: "image",
-    url: first.url,
-    contentType: first.content_type ?? "image/png",
-  };
+  if (first?.url) {
+    return {
+      kind: "image",
+      url: first.url,
+      contentType: first.content_type ?? "image/png",
+    };
+  }
+
+  const single = data.image as { url?: string; content_type?: string } | undefined;
+  if (single?.url) {
+    return {
+      kind: "image",
+      url: single.url,
+      contentType: single.content_type ?? "image/png",
+    };
+  }
+
+  throw new Error("fal.ai returned no image");
 }
 
 /** Enqueue on fal and return immediately. Result arrives at webhookUrl. */

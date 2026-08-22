@@ -131,6 +131,8 @@ Shared, so coordinate: `src/lib/site.ts`, `src/proxy.ts`, `src/app/layout.tsx`,
 Locally, run `npm run dev` and open the matching host (`learn.localhost:3000`,
 etc.). A preview deploy from a branch still serves all three surfaces.
 
+Front-end contributors (landing + dashboard only): see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Project layout
 
 ```

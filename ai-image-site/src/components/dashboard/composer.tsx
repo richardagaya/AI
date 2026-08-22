@@ -103,9 +103,12 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
   const enhanced = prompt.includes(QUALITY_TAGS);
 
   const acceptsImage = modelSupportsImageInput(model);
+  const imageOnly = Boolean(model.imageOnly);
   const usesImage = Boolean(image && acceptsImage);
-  const needsImage = !isVideo && mode === "img2img";
-  const canGenerate = prompt.trim().length > 0 && (!needsImage || usesImage);
+  const needsImage = imageOnly || (!isVideo && mode === "img2img");
+  const canGenerate = imageOnly
+    ? usesImage
+    : prompt.trim().length > 0 && (!needsImage || usesImage);
   const cost = costFor(model, usesImage);
 
   const aspects = UI_ASPECTS.filter((a) => model.aspects.includes(a.id));
@@ -138,6 +141,7 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
       setDuration(m.durations[0]);
     }
     if (!modelSupportsImageInput(m)) clearImage();
+    if (m.imageOnly && !isVideo) setMode("img2img");
   }
 
   function pickImage(f: File | null) {
@@ -214,9 +218,11 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
             }}
             rows={3}
             placeholder={
-              isVideo
-                ? "Describe the scene, the motion, the camera…"
-                : SUGGESTIONS[suggestionIdx]
+              imageOnly
+                ? "Upload an image — no prompt needed"
+                : isVideo
+                  ? "Describe the scene, the motion, the camera…"
+                  : SUGGESTIONS[suggestionIdx]
             }
             className="w-full resize-none rounded-t-[25px] bg-transparent p-5 text-[0.95rem] leading-relaxed text-frost outline-none placeholder:text-frost-faint/70 sm:p-6"
           />
@@ -250,6 +256,7 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
 
           <div className="flex flex-wrap items-center gap-2 border-t border-line/50 px-4 py-3 sm:px-5">
             {/* Aspect ratio — options limited to what the model supports */}
+            {!imageOnly && (
             <Dropdown
               label="Aspect ratio"
               trigger={
@@ -278,6 +285,7 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
                 </div>
               )}
             </Dropdown>
+            )}
 
             {isVideo && (
               <>
@@ -375,7 +383,7 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
             </button>
 
             <div className="ml-auto flex items-center gap-2">
-              {!isVideo && (
+              {!isVideo && !imageOnly && (
                 <button
                   onClick={() => setAdvancedOpen((o) => !o)}
                   className={cn(

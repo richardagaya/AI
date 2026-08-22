@@ -71,13 +71,24 @@ export async function POST(req: Request) {
   if (kind !== "image" && kind !== "video") {
     return NextResponse.json({ error: "Invalid generation kind" }, { status: 400 });
   }
-  if (!prompt) return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
-  if (prompt.length > 2000) return NextResponse.json({ error: "Prompt too long" }, { status: 400 });
-  if (isPromptDisallowed(prompt)) return NextResponse.json({ error: "Prompt not allowed" }, { status: 400 });
 
   const model = getModel(modelId);
   if (!model || model.kind !== kind) {
     return NextResponse.json({ error: "Unknown model" }, { status: 400 });
+  }
+
+  const resolvedPrompt = prompt || (model.imageOnly ? "remove background" : "");
+  if (!resolvedPrompt) {
+    return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+  }
+  if (model.imageOnly && !imageFile) {
+    return NextResponse.json({ error: "Upload an image to run this tool" }, { status: 400 });
+  }
+  if (resolvedPrompt.length > 2000) {
+    return NextResponse.json({ error: "Prompt too long" }, { status: 400 });
+  }
+  if (isPromptDisallowed(resolvedPrompt)) {
+    return NextResponse.json({ error: "Prompt not allowed" }, { status: 400 });
   }
   if (imageFile && !modelSupportsImageInput(model)) {
     return NextResponse.json(
@@ -125,7 +136,7 @@ export async function POST(req: Request) {
         kind,
         mode,
         model: model.id,
-        prompt,
+        prompt: resolvedPrompt,
         negativePrompt,
         aspect,
         duration: durationSeconds ? String(durationSeconds) : null,
@@ -157,7 +168,7 @@ export async function POST(req: Request) {
   }
 
   const prepared = await prepareFalJob(model, {
-    prompt,
+    prompt: resolvedPrompt,
     negativePrompt,
     aspect,
     duration: durationSeconds ?? undefined,

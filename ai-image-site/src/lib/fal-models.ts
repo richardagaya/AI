@@ -21,7 +21,9 @@ export type ModelFamily =
   | "hailuo"
   | "wan"
   | "horse"
-  | "omni";
+  | "omni"
+  | "zimage"
+  | "birefnet";
 
 export type FalModelDef = {
   /** Registry id used across the app + stored on jobs */
@@ -50,6 +52,8 @@ export type FalModelDef = {
   sizes?: Record<string, string>;
   /** Video only: accepts a negative prompt */
   negativePromptParam?: string;
+  /** Image tool that needs a file and does not require a text prompt */
+  imageOnly?: boolean;
 };
 
 export const UI_ASPECTS = [
@@ -95,6 +99,47 @@ const GPT_SIZES: Record<string, string> = {
 };
 
 export const IMAGE_MODELS: FalModelDef[] = [
+  {
+    id: "z-image-turbo",
+    kind: "image",
+    label: "Z-Image Turbo",
+    tagline: "Free-tier fast 6B",
+    provider: "Tongyi-MAI",
+    family: "zimage",
+    endpoints: { text: "fal-ai/z-image/turbo" },
+    cost: { text: 1, image: 1 },
+    aspects: Object.keys(FLUX_SIZES),
+    sizeParam: "image_size",
+    sizes: FLUX_SIZES,
+  },
+  {
+    id: "flux-2-klein-9b",
+    kind: "image",
+    label: "FLUX.2 Klein 9B",
+    tagline: "Free-tier realism + edits",
+    provider: "Black Forest Labs",
+    family: "flux",
+    endpoints: {
+      text: "fal-ai/flux-2/klein/9b",
+      image: "fal-ai/flux-2/klein/9b/edit",
+    },
+    cost: { text: 1, image: 1 },
+    aspects: Object.keys(FLUX_SIZES),
+    sizeParam: "image_size",
+    sizes: FLUX_SIZES,
+  },
+  {
+    id: "birefnet-v2",
+    kind: "image",
+    label: "BiRefNet v2",
+    tagline: "Remove background",
+    provider: "BiRefNet",
+    family: "birefnet",
+    endpoints: { text: "fal-ai/birefnet/v2", image: "fal-ai/birefnet/v2" },
+    cost: { text: 1, image: 1 },
+    aspects: Object.keys(RATIO_SIZES),
+    imageOnly: true,
+  },
   {
     id: "flux-schnell",
     kind: "image",
@@ -288,6 +333,36 @@ export const IMAGE_MODELS: FalModelDef[] = [
 ];
 
 export const VIDEO_MODELS: FalModelDef[] = [
+  {
+    id: "flux-3-video-draft",
+    kind: "video",
+    label: "FLUX 3 Draft",
+    tagline: "Free-tier cheap preview",
+    provider: "Black Forest Labs",
+    family: "flux",
+    endpoints: {
+      text: "blackforestlabs/flux-3/text-to-video/draft",
+      image: "blackforestlabs/flux-3/image-to-video/draft",
+    },
+    cost: { text: 1, image: 1 },
+    aspects: ["16:9", "9:16", "1:1", "21:9"],
+    durations: [5, 8, 10],
+  },
+  {
+    id: "grok-imagine-video-1.5",
+    kind: "video",
+    label: "Grok Imagine 1.5",
+    tagline: "Free-tier xAI video",
+    provider: "xAI",
+    family: "grok",
+    endpoints: {
+      text: "xai/grok-imagine-video/v1.5/text-to-video",
+      image: "xai/grok-imagine-video/v1.5/image-to-video",
+    },
+    cost: { text: 1, image: 1 },
+    aspects: ["16:9", "9:16", "1:1"],
+    durations: [6, 8, 10],
+  },
   {
     id: "kling-o3",
     kind: "video",
