@@ -158,13 +158,18 @@ export async function POST(req: Request) {
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "UNKNOWN";
+    console.error("[generate] create job failed", msg);
     if (msg === "INSUFFICIENT_CREDITS") {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
     }
     if (msg === "USER_NOT_FOUND") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
+    const hint = msg.replace(/\s+/g, " ").slice(0, 220);
+    return NextResponse.json(
+      { error: hint ? `Failed to create job: ${hint}` : "Failed to create job" },
+      { status: 500 },
+    );
   }
 
   const prepared = await prepareFalJob(model, {

@@ -6,25 +6,39 @@
  * are not configured rather than throwing at import time.
  */
 
-import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { cert, getApps, initializeApp, type ServiceAccount } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 let _initialized = false;
 let _initError = "";
 
+function parseServiceAccount(raw: string): ServiceAccount {
+  const stripped =
+    (raw.startsWith("'") && raw.endsWith("'")) ||
+    (raw.startsWith('"') && raw.endsWith('"'))
+      ? raw.slice(1, -1)
+      : raw;
+  return JSON.parse(stripped) as ServiceAccount;
+}
+
 function tryInit(): boolean {
   if (_initialized) return true;
-  if (getApps().length > 0) { _initialized = true; return true; }
+  if (getApps().length > 0) {
+    _initialized = true;
+    return true;
+  }
 
-  const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const sa = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  if (!sa) {
+    _initError = "FIREBASE_SERVICE_ACCOUNT is not set";
+    return false;
+  }
+
   try {
-    if (sa) {
-      initializeApp({ credential: cert(JSON.parse(sa)) });
-    } else {
-      // Falls back to Application Default Credentials (works on GCP, or when
-      // GOOGLE_APPLICATION_CREDENTIALS is set to a service-account key file).
-      initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
-    }
+    initializeApp({
+      credential: cert(parseServiceAccount(sa)),
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
     _initialized = true;
     return true;
   } catch (e) {

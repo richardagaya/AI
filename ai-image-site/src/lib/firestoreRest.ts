@@ -1,10 +1,11 @@
 /**
- * Thin Firestore REST API client.
+ * Firestore access for App Router handlers.
  *
- * Uses the caller's Firebase ID token so every operation runs under that
- * user's identity and respects Firestore security rules.  No Admin SDK /
- * service-account credentials required.
+ * Reads use the caller's Firebase ID token so security rules still apply.
+ * Job creation and other privileged writes prefer the Admin SDK (bypasses
+ * rules) because clients must not be able to mint jobs or decrement credits.
  */
+import { FieldValue, getAdminDb, getAdminInitError } from "@/lib/firebaseAdmin";
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!;
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -118,6 +119,11 @@ export async function fsUpdate(
   data: Record<string, unknown>,
   token: string,
 ): Promise<void> {
+  const adminDb = getAdminDb();
+  if (adminDb) {
+    await adminDb.collection(collection).doc(id).set(data, { merge: true });
+    return;
+  }
   const mask = Object.keys(data)
     .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
     .join("&");
@@ -184,49 +190,24 @@ export async function fsCreateJobTx(
   jobId: string,
   jobData: Record<string, unknown>,
   costCredits: number,
-  token: string,
+  _token: string,
 ): Promise<void> {
-  // 1. Begin transaction
-  const txRes = (await fsReq(`${FS_BASE}:beginTransaction`, "POST", token, {
-    options: { readWrite: {} },
-  })) as { transaction: string };
-  const txId = txRes.transaction;
+  const adminDb = getAdminDb();
+  if (!adminDb) {
+    throw new Error(
+      `Firebase Admin is not configured (${getAdminInitError() || "unknown"}). Set FIREBASE_SERVICE_ACCOUNT.`,
+    );
+  }
 
-  // 2. Read user doc within the transaction
-  const userRes = (await fetch(
-    `${FS_BASE}/users/${userId}?transaction=${encodeURIComponent(txId)}`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  ).then((r) => (r.status === 404 ? null : r.json()))) as {
-    fields?: Record<string, unknown>;
-  } | null;
-
-  if (!userRes) throw new Error("USER_NOT_FOUND");
-
-  const userData = fieldsToObj(userRes.fields ?? {});
-  const balance = Number(userData.creditBalance ?? 0);
-  if (balance < costCredits) throw new Error("INSUFFICIENT_CREDITS");
-
-  // 3 & 4. Commit: write job + decrement balance
-  await fsReq(`${FS_BASE}:commit`, "POST", token, {
-    transaction: txId,
-    writes: [
-      {
-        update: {
-          name: `projects/${PROJECT_ID}/databases/(default)/documents/jobs/${jobId}`,
-          fields: objToFields(jobData),
-        },
-      },
-      {
-        transform: {
-          document: `projects/${PROJECT_ID}/databases/(default)/documents/users/${userId}`,
-          fieldTransforms: [
-            {
-              fieldPath: "creditBalance",
-              increment: toFsValue(-costCredits),
-            },
-          ],
-        },
-      },
-    ],
+  await adminDb.runTransaction(async (tx) => {
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await tx.get(userRef);
+    if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
+    const balance = Number(userSnap.data()?.creditBalance ?? 0);
+    if (balance < costCredits) throw new Error("INSUFFICIENT_CREDITS");
+    tx.set(adminDb.collection("jobs").doc(jobId), jobData);
+    tx.update(userRef, {
+      creditBalance: FieldValue.increment(-costCredits),
+    });
   });
 }
