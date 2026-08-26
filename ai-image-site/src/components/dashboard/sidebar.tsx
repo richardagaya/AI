@@ -187,7 +187,7 @@ export function Sidebar({
             {firstNameOf(user).slice(0, 1).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1 truncate text-[0.76rem] text-frost-dim">
-            {user.displayName || user.email}
+            {firstNameOf(user)}
           </span>
           <button
             onClick={() => logout()}

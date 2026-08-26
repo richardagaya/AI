@@ -83,7 +83,7 @@ export function StudioGate({ onStart }: { onStart: (mode: AuthMode) => void }) {
 
           <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-frost-dim">
             Your queue, your credits and every frame you have made live here.
-            Email and password is all it takes — no ID, no KYC.
+            Email, a name, and a password — no ID, no KYC.
           </p>
 
           <ul className="mt-8 flex flex-col gap-3 border-t border-line/60 pt-8">

@@ -22,15 +22,16 @@ export async function GET(req: Request) {
     });
   }
 
-  const storedName =
-    typeof doc.data.displayName === "string" ? doc.data.displayName : null;
+  const storedRaw =
+    typeof doc.data.displayName === "string" ? doc.data.displayName.trim() : "";
+  const storedName = storedRaw.split(/\s+/)[0] || null;
   const resolvedName = storedName || displayName;
 
-  if (displayName && !storedName) {
+  if (resolvedName && storedRaw !== resolvedName) {
     await fsSet(
       "users",
       userId,
-      { ...doc.data, displayName },
+      { ...doc.data, displayName: resolvedName },
       token,
     );
   }

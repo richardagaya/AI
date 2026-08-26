@@ -29,10 +29,11 @@ export async function getSession(req: Request): Promise<Session | null> {
     });
     const userId = payload.sub;
     if (!userId) return null;
-    const displayName =
+    const rawName =
       typeof payload["name"] === "string" && payload["name"].trim()
         ? payload["name"].trim()
         : null;
+    const displayName = rawName?.split(/\s+/)[0] || null;
     return {
       userId,
       email: (payload["email"] as string) ?? "",

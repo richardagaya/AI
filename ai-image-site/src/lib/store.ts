@@ -15,6 +15,7 @@ import { atom } from "jotai";
 import { signOut } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
 import { apiUrl } from "@/lib/site";
+import { firstGivenName } from "@/lib/utils";
 import type {
   DashboardView,
   GenerateSettings,
@@ -78,7 +79,13 @@ export const refreshMeAtom = atom(null, async (_get, set) => {
   set(
     userAtom,
     res.user
-      ? { ...res.user, displayName: res.user.displayName || target.displayName }
+      ? {
+          ...res.user,
+          displayName:
+            firstGivenName(res.user.displayName) ||
+            firstGivenName(target.displayName) ||
+            res.user.displayName,
+        }
       : null,
   );
 });

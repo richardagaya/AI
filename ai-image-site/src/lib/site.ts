@@ -118,6 +118,31 @@ export function studioUrl(mode?: "login" | "signup"): string {
   return mode ? `${STUDIO_URL}?mode=${mode}` : STUDIO_URL;
 }
 
+/**
+ * Same-origin href for the studio host vs the /studio prefix used in local dev.
+ * Auth UI lives on the studio surface, so this stays inside the current origin.
+ */
+function studioSurfaceHref(path: string): string {
+  const trimmed = path.startsWith("/") ? path : `/${path}`;
+  if (typeof window === "undefined") {
+    return `${STUDIO_URL.replace(/\/+$/, "")}${trimmed === "/" ? "" : trimmed}`;
+  }
+  if (window.location.pathname === "/studio" || window.location.pathname.startsWith("/studio/")) {
+    return trimmed === "/" ? "/studio" : `/studio${trimmed}`;
+  }
+  return trimmed;
+}
+
+/** Dedicated password-reset page on the studio host. */
+export function studioResetHref(): string {
+  return studioSurfaceHref("/reset-password");
+}
+
+export function studioAuthHref(mode?: "login" | "signup"): string {
+  const path = studioSurfaceHref("/");
+  return mode ? `${path}?mode=${mode}` : path;
+}
+
 /** Absolute URL of the learn index, or of one lesson. */
 export function learnUrl(slug?: string): string {
   return slug ? `${LEARN_URL}/${slug}` : LEARN_URL;

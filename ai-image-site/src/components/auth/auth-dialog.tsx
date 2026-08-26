@@ -8,6 +8,7 @@ import { Input, Label } from "@/components/ui/field";
 import { Logo } from "@/components/brand/snowflake";
 import { LazyVideo } from "@/components/ui/lazy-video";
 import { AUTH_BACKGROUND } from "@/lib/media";
+import { studioResetHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 export type AuthMode = "login" | "signup";
@@ -17,11 +18,13 @@ export function AuthDialog({
   mode,
   email,
   password,
+  name,
   busy,
   error,
   onModeChange,
   onEmailChange,
   onPasswordChange,
+  onNameChange,
   onSubmit,
   onGoogle,
   onClose,
@@ -30,12 +33,14 @@ export function AuthDialog({
   mode: AuthMode;
   email: string;
   password: string;
+  name: string;
   busy: boolean;
   error: string | null;
   onModeChange: (mode: AuthMode) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
-  onSubmit: (email: string, password: string) => void;
+  onNameChange: (value: string) => void;
+  onSubmit: (email: string, password: string, name: string) => void;
   onGoogle: () => void;
   onClose: () => void;
 }) {
@@ -109,7 +114,7 @@ export function AuthDialog({
               <p className="mt-2 text-[0.88rem] text-frost-dim">
                 {mode === "login"
                   ? "Sign in to pick up where your queue left off."
-                  : "Email and password is all it takes. No ID, no KYC."}
+                  : "A name, email and password. No ID, no KYC."}
               </p>
 
               <div className="mt-7 flex rounded-full border border-line/70 bg-ink-soft/60 p-1">
@@ -144,11 +149,28 @@ export function AuthDialog({
                   const data = new FormData(e.currentTarget);
                   const nextEmail = String(data.get("email") ?? "").trim();
                   const nextPassword = String(data.get("password") ?? "");
+                  const nextName = String(data.get("name") ?? "").trim();
                   onEmailChange(nextEmail);
                   onPasswordChange(nextPassword);
-                  onSubmit(nextEmail, nextPassword);
+                  onNameChange(nextName);
+                  onSubmit(nextEmail, nextPassword, nextName);
                 }}
               >
+                {mode === "signup" && (
+                  <label className="grid gap-2">
+                    <Label>Name</Label>
+                    <Input
+                      name="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => onNameChange(e.target.value)}
+                      placeholder="Ada"
+                      autoComplete="given-name"
+                      maxLength={40}
+                      required
+                    />
+                  </label>
+                )}
                 <label className="grid gap-2">
                   <Label>Email</Label>
                   <Input
@@ -162,7 +184,17 @@ export function AuthDialog({
                   />
                 </label>
                 <label className="grid gap-2">
-                  <Label>Password</Label>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <Label>Password</Label>
+                    {mode === "login" && (
+                      <a
+                        href={studioResetHref()}
+                        className="text-[0.68rem] font-medium text-frost-faint transition-colors hover:text-solar"
+                      >
+                        Forgot password?
+                      </a>
+                    )}
+                  </div>
                   <Input
                     name="password"
                     type="password"
