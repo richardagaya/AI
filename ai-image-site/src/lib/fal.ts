@@ -243,7 +243,11 @@ function readableFalError(e: unknown): Error {
   if (haystack.includes("exhausted") || haystack.includes("rate limit")) {
     return new Error("fal.ai rate limit reached — try again in a moment.");
   }
-  if (haystack.includes("content policy") || haystack.includes("safety")) {
+  if (
+    haystack.includes("content policy") ||
+    haystack.includes("content_policy") ||
+    haystack.includes("safety")
+  ) {
     return new Error("The model rejected this prompt under its content policy.");
   }
   return new Error(raw);
