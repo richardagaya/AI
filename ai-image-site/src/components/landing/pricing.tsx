@@ -42,16 +42,13 @@ const PACKS = [
 
 export function Pricing({ startHref }: { startHref: string }) {
   return (
-    <section
-      id="pricing"
-      className="relative mx-auto max-w-7xl scroll-mt-24 px-5 py-24 sm:px-8 sm:py-32"
-    >
-      <Reveal className="max-w-2xl">
+    <section className="relative mx-auto max-w-7xl px-5 pt-28 pb-20 sm:px-8 sm:pt-36 sm:pb-28">
+      <Reveal immediate className="max-w-2xl">
         <SectionLabel>Credits</SectionLabel>
-        <h2 className="text-[clamp(2.1rem,5vw,3.6rem)] leading-[0.95] font-semibold tracking-[-0.045em]">
+        <h1 className="text-[clamp(2.1rem,5vw,3.6rem)] leading-[0.95] font-semibold tracking-[-0.045em]">
           Pay for frames,
           <span className="font-serif font-normal italic text-solar"> not for waiting.</span>
-        </h2>
+        </h1>
         <p className="mt-5 text-[0.95rem] leading-relaxed text-frost-dim">
           One credit renders one image. Image-to-image costs two. No subscription,
           no monthly minimum, and credits never expire.
@@ -60,7 +57,7 @@ export function Pricing({ startHref }: { startHref: string }) {
 
       <div className="mt-14 grid gap-4 lg:grid-cols-3">
         {PACKS.map((p, i) => (
-          <Reveal key={p.name} delay={i * 0.08}>
+          <Reveal key={p.name} delay={i * 0.08} immediate={i === 0}>
             <div
               className={cn(
                 "relative flex h-full flex-col overflow-hidden rounded-3xl border p-8 transition-all duration-400",
@@ -78,9 +75,9 @@ export function Pricing({ startHref }: { startHref: string }) {
                 </>
               )}
 
-              <h3 className="text-[0.72rem] font-semibold tracking-[0.18em] uppercase text-frost-faint">
+              <h2 className="text-[0.72rem] font-semibold tracking-[0.18em] uppercase text-frost-faint">
                 {p.name}
-              </h3>
+              </h2>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="text-5xl font-semibold tracking-[-0.05em]">{p.price}</span>
                 <span className="text-[0.8rem] text-frost-faint">one-time</span>

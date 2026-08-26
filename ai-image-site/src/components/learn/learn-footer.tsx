@@ -1,6 +1,6 @@
 import { Logo } from "@/components/brand/snowflake";
 import { LESSONS } from "@/lib/learn";
-import { learnUrl, SITE_URL, studioUrl } from "@/lib/site";
+import { learnUrl, pricingUrl, SITE_URL, studioUrl } from "@/lib/site";
 
 export function LearnFooter() {
   return (
@@ -56,7 +56,7 @@ export function LearnFooter() {
               </li>
               <li>
                 <a
-                  href={`${SITE_URL}/#pricing`}
+                  href={pricingUrl()}
                   className="text-[0.86rem] text-frost-dim transition-colors hover:text-solar"
                 >
                   Pricing

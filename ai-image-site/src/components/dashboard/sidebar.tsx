@@ -9,7 +9,7 @@ import {
   ImagePlus,
   Layers,
   LogOut,
-  Sparkles,
+  Megaphone,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -35,7 +35,7 @@ const NAV: NavGroup[] = [
     items: [
       { view: "image", label: "Generate Image", icon: ImagePlus },
       { view: "video", label: "Generate Video", icon: Clapperboard },
-      { view: "enhance", label: "Enhance & Upscale", icon: Sparkles },
+      { view: "ugc-ads", label: "UGC Ads", icon: Megaphone },
     ],
   },
   {

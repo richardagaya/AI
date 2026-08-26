@@ -100,12 +100,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown model" }, { status: 400 });
   }
 
-  const resolvedPrompt = prompt || (model.imageOnly ? "remove background" : "");
+  const resolvedPrompt = prompt;
   if (!resolvedPrompt) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
-  }
-  if (model.imageOnly && !imageFile) {
-    return NextResponse.json({ error: "Upload an image to run this tool" }, { status: 400 });
   }
   if (resolvedPrompt.length > 2000) {
     return NextResponse.json({ error: "Prompt too long" }, { status: 400 });

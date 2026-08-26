@@ -26,7 +26,7 @@ export type StudioJob = {
 export type DashboardView =
   | "image"
   | "video"
-  | "enhance"
+  | "ugc-ads"
   | "influencers"
   | "create-influencer"
   | "affiliate"

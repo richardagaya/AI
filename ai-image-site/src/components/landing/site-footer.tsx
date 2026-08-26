@@ -1,14 +1,14 @@
 import { Logo } from "@/components/brand/snowflake";
-import { learnUrl, studioUrl } from "@/lib/site";
+import { learnUrl, pricingUrl, studioUrl } from "@/lib/site";
 
 const COLUMNS = [
   {
     title: "Product",
     links: [
-      { label: "Showcase", href: "#showcase" },
+      { label: "Showcase", href: "/#showcase" },
       { label: "Open studio", href: studioUrl() },
-      { label: "Pricing", href: "#pricing" },
-      { label: "FAQ", href: "#faq" },
+      { label: "Pricing", href: pricingUrl() },
+      { label: "FAQ", href: "/#faq" },
     ],
   },
   {

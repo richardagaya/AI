@@ -5,7 +5,7 @@ import type { AuthMode } from "@/components/auth/auth-dialog";
 
 export const metadata: Metadata = {
   title: "Studio — minsuro",
-  description: "Generate, enhance and manage your renders.",
+  description: "Generate and manage your renders.",
   robots: { index: false, follow: false },
 };
 

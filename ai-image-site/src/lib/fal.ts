@@ -63,15 +63,6 @@ function buildImageInput(
   s: RunSettings,
   imageUrl: string | null,
 ): Record<string, unknown> {
-  if (model.family === "birefnet") {
-    if (!imageUrl) throw new Error("BiRefNet needs an image to cut out");
-    return {
-      image_url: imageUrl,
-      output_format: "png",
-      refine_foreground: true,
-    };
-  }
-
   const size =
     model.sizes?.[resolveAspect(model, s.aspect)] ??
     Object.values(model.sizes ?? {})[0];

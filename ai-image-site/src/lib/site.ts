@@ -123,6 +123,11 @@ export function learnUrl(slug?: string): string {
   return slug ? `${LEARN_URL}/${slug}` : LEARN_URL;
 }
 
+/** Absolute URL of the credits / pricing page. */
+export function pricingUrl(): string {
+  return `${SITE_URL}/pricing`;
+}
+
 /**
  * Resolve an API path against the configured API origin. Returns the path
  * unchanged while the API is same-origin, so callers never need to change

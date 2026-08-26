@@ -9,10 +9,10 @@ import { dashboardViewAtom, userAtom } from "@/lib/store";
 import { Sidebar } from "./sidebar";
 import { AffiliateView } from "./views/affiliate-view";
 import { CreateInfluencerView } from "./views/create-influencer-view";
-import { EnhanceView } from "./views/enhance-view";
 import { ImageView } from "./views/image-view";
 import { InfluencersView } from "./views/influencers-view";
 import { LibraryView } from "./views/library-view";
+import { UgcAdsView } from "./views/ugc-ads-view";
 import { VideoView } from "./views/video-view";
 import { ExploreView } from "./views/explore-view";
 import type { DashboardView } from "./types";
@@ -102,7 +102,7 @@ export function Dashboard() {
             >
               {view === "image" && <ImageView onNavigate={navigate} />}
               {view === "video" && <VideoView />}
-              {view === "enhance" && <EnhanceView />}
+              {view === "ugc-ads" && <UgcAdsView />}
               {view === "influencers" && (
                 <InfluencersView onNavigate={navigate} />
               )}

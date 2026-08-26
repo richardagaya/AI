@@ -22,8 +22,7 @@ export type ModelFamily =
   | "wan"
   | "horse"
   | "omni"
-  | "zimage"
-  | "birefnet";
+  | "zimage";
 
 export type FalModelDef = {
   /** Registry id used across the app + stored on jobs */
@@ -52,8 +51,6 @@ export type FalModelDef = {
   sizes?: Record<string, string>;
   /** Video only: accepts a negative prompt */
   negativePromptParam?: string;
-  /** Image tool that needs a file and does not require a text prompt */
-  imageOnly?: boolean;
 };
 
 export const UI_ASPECTS = [
@@ -127,18 +124,6 @@ export const IMAGE_MODELS: FalModelDef[] = [
     aspects: Object.keys(FLUX_SIZES),
     sizeParam: "image_size",
     sizes: FLUX_SIZES,
-  },
-  {
-    id: "birefnet-v2",
-    kind: "image",
-    label: "BiRefNet v2",
-    tagline: "Remove background",
-    provider: "BiRefNet",
-    family: "birefnet",
-    endpoints: { text: "fal-ai/birefnet/v2", image: "fal-ai/birefnet/v2" },
-    cost: { text: 1, image: 1 },
-    aspects: Object.keys(RATIO_SIZES),
-    imageOnly: true,
   },
   {
     id: "flux-schnell",

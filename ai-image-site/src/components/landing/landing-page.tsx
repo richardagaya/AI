@@ -3,7 +3,6 @@ import { Faq } from "@/components/landing/faq";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Hero } from "@/components/landing/hero";
 import { MarqueeStrip } from "@/components/landing/marquee-strip";
-import { Pricing } from "@/components/landing/pricing";
 import { Showcase } from "@/components/landing/showcase";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteNav } from "@/components/landing/site-nav";
@@ -29,7 +28,6 @@ export function LandingPage() {
         <StudioPreview />
         <Capabilities />
         <Workflow />
-        <Pricing startHref={startHref} />
         <Faq />
         <FinalCta startHref={startHref} />
       </main>
