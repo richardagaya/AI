@@ -33,6 +33,7 @@ import {
   negativePromptAtom,
   promptAtom,
 } from "@/lib/store";
+import { apiUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { ModelPicker } from "./model-picker";
 
@@ -43,17 +44,6 @@ const SUGGESTIONS = [
   "ember dragon hatchling on a blacksmith's anvil, sparks flying…",
   "mermaid bioluminescent art, deep ocean glow, painterly…",
   "gothic waifu, dark fantasy cathedral, candlelight haze…",
-];
-
-const SURPRISE_PROMPTS = [
-  "celestial kitsune priestess, nine glowing tails, gold leaf shrine, midnight volumetric light, ultra detailed",
-  "cyberpunk elf mercenary, neon rain, chrome katana, reflective puddles, cinematic 85mm portrait",
-  "frost sorceress weaving a blizzard, silver hair, ice crystal crown, falling snow, cinematic key light",
-  "ember dragon hatchling curled on a blacksmith's anvil, sparks flying, warm forge glow, macro detail",
-  "bioluminescent mermaid queen, deep ocean trench, glowing coral crown, painterly fantasy art",
-  "gothic vampire waifu, ruined cathedral, candlelight haze, dark fantasy, intricate lace detail",
-  "mecha samurai under cherry blossoms, solar gold armor, drifting petals, epic wide shot",
-  "astral witch floating in a nebula library, floating grimoires, purple starlight, dreamy glow",
 ];
 
 const CAMERA_MOVES = ["Static", "Orbit", "Dolly in", "Crane up", "Handheld"];
@@ -98,6 +88,7 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
   const [strength, setStrength] = useState(0.8);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [suggestionIdx, setSuggestionIdx] = useState(0);
+  const [surprising, setSurprising] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const enhanced = prompt.includes(QUALITY_TAGS);
@@ -152,15 +143,36 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
     if (!isVideo) setMode("text2img");
   }
 
-  function surprise() {
-    const next =
-      SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
-    setPrompt(next);
-    textareaRef.current?.focus();
+  async function surprise() {
+    if (surprising) return;
+    setSurprising(true);
+    try {
+      const res = await fetch(apiUrl(`/api/surprise?kind=${kind}`), {
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => ({}))) as { prompt?: string };
+      if (!res.ok || !data.prompt?.trim()) {
+        throw new Error("surprise failed");
+      }
+      setPrompt(data.prompt.trim());
+      textareaRef.current?.focus();
+    } catch {
+      setPrompt(
+        isVideo
+          ? "astral witch, nebula library, slow orbit around the subject, volumetric moonlight, 85mm portrait"
+          : "celestial kitsune priestess, gold leaf shrine, volumetric moonlight, 85mm portrait",
+      );
+      textareaRef.current?.focus();
+    } finally {
+      setSurprising(false);
+    }
   }
 
   function enhance() {
-    if (!prompt.trim()) return surprise();
+    if (!prompt.trim()) {
+      void surprise();
+      return;
+    }
     if (enhanced) return;
     setPrompt(`${prompt.replace(/[,.\s]+$/, "")}, ${QUALITY_TAGS}`);
   }
@@ -355,11 +367,19 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
               <ImagePlus className="size-4" />
             </button>
             <button
-              onClick={surprise}
-              title="Surprise me"
-              className="cursor-pointer rounded-full border border-line/70 bg-ink-soft/60 p-2.5 text-frost-faint transition-all hover:border-nova/50 hover:text-nova-soft"
+              onClick={() => void surprise()}
+              disabled={surprising}
+              title="Surprise me with a unique prompt"
+              className={cn(
+                "cursor-pointer rounded-full border border-line/70 bg-ink-soft/60 p-2.5 text-frost-faint transition-all hover:border-nova/50 hover:text-nova-soft",
+                "disabled:cursor-wait disabled:opacity-60",
+              )}
             >
-              <Dices className="size-4" />
+              {surprising ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Dices className="size-4" />
+              )}
             </button>
             <button
               onClick={enhance}

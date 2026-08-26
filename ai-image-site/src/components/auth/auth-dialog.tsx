@@ -35,7 +35,7 @@ export function AuthDialog({
   onModeChange: (mode: AuthMode) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
-  onSubmit: () => void;
+  onSubmit: (email: string, password: string) => void;
   onGoogle: () => void;
   onClose: () => void;
 }) {
@@ -140,12 +140,19 @@ export function AuthDialog({
                 className="mt-6 flex flex-col gap-4"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  onSubmit();
+                  // Read from the DOM so browser autofill is not missed by React state.
+                  const data = new FormData(e.currentTarget);
+                  const nextEmail = String(data.get("email") ?? "").trim();
+                  const nextPassword = String(data.get("password") ?? "");
+                  onEmailChange(nextEmail);
+                  onPasswordChange(nextPassword);
+                  onSubmit(nextEmail, nextPassword);
                 }}
               >
                 <label className="grid gap-2">
                   <Label>Email</Label>
                   <Input
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => onEmailChange(e.target.value)}
@@ -157,10 +164,12 @@ export function AuthDialog({
                 <label className="grid gap-2">
                   <Label>Password</Label>
                   <Input
+                    name="password"
                     type="password"
                     value={password}
                     onChange={(e) => onPasswordChange(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={mode === "signup" ? "At least 6 characters" : "••••••••"}
+                    minLength={mode === "signup" ? 6 : undefined}
                     autoComplete={
                       mode === "login" ? "current-password" : "new-password"
                     }

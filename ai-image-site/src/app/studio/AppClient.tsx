@@ -35,9 +35,51 @@ async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> 
   return data as T;
 }
 
+function authErrorCode(e: unknown): string | null {
+  if (typeof e === "object" && e !== null && "code" in e) {
+    const code = (e as { code: unknown }).code;
+    return typeof code === "string" ? code : null;
+  }
+  return null;
+}
+
+/** Firebase's default message is "Error" after the code is stripped. Map codes instead. */
 function readableAuthError(e: unknown, fallback: string) {
+  switch (authErrorCode(e)) {
+    case "auth/email-already-in-use":
+      return "That email already has an account. Sign in, or use Continue with Google if you signed up that way.";
+    case "auth/invalid-email":
+      return "Enter a valid email address.";
+    case "auth/missing-email":
+      return "Enter an email address.";
+    case "auth/missing-password":
+      return "Enter a password.";
+    case "auth/weak-password":
+      return "Password must be at least 6 characters.";
+    case "auth/invalid-credential":
+    case "auth/invalid-login-credentials":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Email or password is incorrect. If you created this account with Google, use Continue with Google.";
+    case "auth/user-disabled":
+      return "This account has been disabled.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Wait a moment and try again.";
+    case "auth/network-request-failed":
+      return "Network error. Check your connection and try again.";
+    case "auth/operation-not-allowed":
+      return "Email and password sign-up is turned off for this project.";
+    case "auth/account-exists-with-different-credential":
+      return "This email is already used with Google. Continue with Google instead.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+      return "";
+    default:
+      break;
+  }
   const msg = e instanceof Error ? e.message : fallback;
-  return msg.replace("Firebase: ", "").replace(/ \(auth\/.*\)\.?$/, "");
+  const cleaned = msg.replace("Firebase: ", "").replace(/ \(auth\/.*\)\.?$/, "");
+  return cleaned && cleaned !== "Error" ? cleaned : fallback;
 }
 
 export default function AppClient({
@@ -135,15 +177,44 @@ export default function AppClient({
     setAuthOpen(true);
   }
 
-  async function onAuthSubmit() {
+  async function onAuthSubmit(emailValue: string, passwordValue: string) {
+    const trimmedEmail = emailValue.trim();
+    setEmail(trimmedEmail);
+    setPassword(passwordValue);
     setError(null);
+
+    if (!trimmedEmail || !passwordValue) {
+      setError("Enter an email and password.");
+      return;
+    }
+    if (authMode === "signup" && passwordValue.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setBusy(true);
     try {
       if (authMode === "login") {
-        await signInWithEmailAndPassword(firebaseAuth, email, password);
+        await signInWithEmailAndPassword(firebaseAuth, trimmedEmail, passwordValue);
       } else {
-        await createUserWithEmailAndPassword(firebaseAuth, email, password);
+        await createUserWithEmailAndPassword(
+          firebaseAuth,
+          trimmedEmail,
+          passwordValue,
+        );
       }
+    } catch (e: unknown) {
+      setError(
+        readableAuthError(
+          e,
+          authMode === "login" ? "Sign in failed" : "Signup failed",
+        ),
+      );
+      setBusy(false);
+      return;
+    }
+
+    try {
       await refreshMe();
       setAuthOpen(false);
       setPassword("");
@@ -151,7 +222,7 @@ export default function AppClient({
       setError(
         readableAuthError(
           e,
-          authMode === "login" ? "Sign in failed" : "Signup failed",
+          "Your account was created, but the studio could not load. Try signing in.",
         ),
       );
     } finally {
@@ -167,7 +238,8 @@ export default function AppClient({
       await refreshMe();
       setAuthOpen(false);
     } catch (e: unknown) {
-      setError(readableAuthError(e, "Google sign-in failed"));
+      const message = readableAuthError(e, "Google sign-in failed");
+      if (message) setError(message);
     } finally {
       setBusy(false);
     }
@@ -189,7 +261,10 @@ export default function AppClient({
         password={password}
         busy={busy}
         error={error}
-        onModeChange={setAuthMode}
+        onModeChange={(mode) => {
+          setAuthMode(mode);
+          setError(null);
+        }}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onSubmit={onAuthSubmit}
