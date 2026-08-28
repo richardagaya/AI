@@ -43,7 +43,10 @@ export const dashboardViewAtom = atom<DashboardView>("image");
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
 async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, init);
+  const res = await fetch(input, {
+    ...init,
+    signal: init?.signal ?? AbortSignal.timeout(12_000),
+  });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg =

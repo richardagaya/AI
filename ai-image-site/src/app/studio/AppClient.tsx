@@ -70,27 +70,46 @@ export default function AppClient({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [hasFirebaseSession, setHasFirebaseSession] = useState(false);
 
   useEffect(() => {
-    return onAuthStateChanged(firebaseAuth, async (fbUser) => {
+    let cancelled = false;
+    const failSafe = window.setTimeout(() => {
+      if (!cancelled) setAuthResolved(true);
+    }, 4000);
+
+    const unsub = onAuthStateChanged(firebaseAuth, async (fbUser) => {
+      window.clearTimeout(failSafe);
+      if (cancelled) return;
+      // Unblock the splash before /api/auth/me returns — a hung account
+      // fetch used to leave the studio on "Loading your studio" forever.
+      setAuthResolved(true);
+      setHasFirebaseSession(Boolean(fbUser));
       if (fbUser) {
         try {
           await refreshMe();
-          setAuthOpen(false);
+          if (!cancelled) setAuthOpen(false);
         } catch (e: unknown) {
-          setError(
-            readableAuthError(
-              e,
-              "Signed in, but the studio could not load your account.",
-            ),
-          );
+          if (!cancelled) {
+            setError(
+              readableAuthError(
+                e,
+                "Signed in, but the studio could not load your account.",
+              ),
+            );
+          }
         }
       } else {
         setUser(null);
         setJobs([]);
       }
-      setAuthResolved(true);
     });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(failSafe);
+      unsub();
+    };
   }, [refreshMe, setUser, setJobs, setError, setAuthResolved]);
 
   const userId = user?.id;
@@ -227,7 +246,11 @@ export default function AppClient({
     }
   }
 
-  if (!authResolved) return <StudioSplash />;
+  const waitingForAccount =
+    hasFirebaseSession && !user && !error && !initialAuthMode;
+  if ((!authResolved && !initialAuthMode) || waitingForAccount) {
+    return <StudioSplash />;
+  }
 
   if (user) {
     return <Dashboard />;
