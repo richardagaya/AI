@@ -114,7 +114,7 @@ export function AuthDialog({
               <p className="mt-2 text-[0.88rem] text-frost-dim">
                 {mode === "login"
                   ? "Sign in to pick up where your queue left off."
-                  : "A name, email and password. No ID, no KYC."}
+                  : "A name, email and password. Twenty free credits to start."}
               </p>
 
               <div className="mt-7 flex rounded-full border border-line/70 bg-ink-soft/60 p-1">

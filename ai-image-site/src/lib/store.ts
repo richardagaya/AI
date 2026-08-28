@@ -85,6 +85,7 @@ export const refreshMeAtom = atom(null, async (_get, set) => {
             firstGivenName(res.user.displayName) ||
             firstGivenName(target.displayName) ||
             res.user.displayName,
+          isAdmin: Boolean(res.user.isAdmin),
         }
       : null,
   );

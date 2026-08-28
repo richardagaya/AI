@@ -10,6 +10,7 @@ import {
   Layers,
   LogOut,
   Megaphone,
+  Mail,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -127,6 +128,15 @@ export function Sidebar({
 
   if (!user) return null;
   const creditPct = Math.min(100, (user.creditBalance / 200) * 100);
+  const nav = user.isAdmin
+    ? [
+        ...NAV,
+        {
+          title: "Admin",
+          items: [{ view: "audience" as const, label: "Audience", icon: Mail }],
+        },
+      ]
+    : NAV;
 
   return (
     <div className="flex h-full w-full flex-col bg-ink-soft/60">
@@ -135,7 +145,7 @@ export function Sidebar({
       </div>
 
       <nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-5">
-        {NAV.map((group) => (
+        {nav.map((group) => (
           <div key={group.title} className="mb-6">
             <p className="mb-2 px-3 text-[0.6rem] font-bold tracking-[0.22em] uppercase text-frost-faint/70">
               {group.title}

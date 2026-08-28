@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { ResetPasswordPage } from "@/components/auth/reset-password-page";
-import { StudioSplash } from "@/components/auth/studio-gate";
 
 export const metadata: Metadata = {
   title: "Reset password — minsuro",
@@ -9,10 +7,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ oobCode?: string; mode?: string }>;
+}) {
+  const { oobCode, mode } = await searchParams;
   return (
-    <Suspense fallback={<StudioSplash />}>
-      <ResetPasswordPage />
-    </Suspense>
+    <ResetPasswordPage
+      oobCode={oobCode ?? null}
+      mode={mode ?? null}
+    />
   );
 }

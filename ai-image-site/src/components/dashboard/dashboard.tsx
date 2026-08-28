@@ -8,6 +8,7 @@ import { Logo, Snowflake } from "@/components/brand/snowflake";
 import { dashboardViewAtom, userAtom } from "@/lib/store";
 import { Sidebar } from "./sidebar";
 import { AffiliateView } from "./views/affiliate-view";
+import { AudienceView } from "./views/audience-view";
 import { CreateInfluencerView } from "./views/create-influencer-view";
 import { ImageView } from "./views/image-view";
 import { InfluencersView } from "./views/influencers-view";
@@ -110,6 +111,7 @@ export function Dashboard() {
                 <CreateInfluencerView onNavigate={navigate} />
               )}
               {view === "affiliate" && <AffiliateView />}
+              {view === "audience" && user.isAdmin && <AudienceView />}
               {view === "library" && <LibraryView />}
               {view === "explore" && <ExploreView />}
             </motion.div>

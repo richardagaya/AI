@@ -57,6 +57,17 @@ const EnvSchema = z.object({
         : undefined,
     z.enum(["NGN", "USD", "GHS", "ZAR", "KES"]).optional(),
   ),
+
+  // Transactional email (welcome mail 5 minutes after signup)
+  RESEND_API_KEY: optionalSecret,
+  MAIL_FROM: optionalSecret,
+  // Protects /api/cron/welcome. Vercel Cron sends this as Bearer automatically
+  // when the env var is named CRON_SECRET.
+  CRON_SECRET: optionalSecret,
+  // Protects /api/admin/audience. Falls back to CRON_SECRET if unset.
+  ADMIN_SECRET: optionalSecret,
+  // Comma-separated emails that can open Audience in the studio.
+  ADMIN_EMAILS: optionalSecret,
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -90,6 +101,11 @@ function rawEnv() {
     FIREBASE_SERVICE_ACCOUNT: process.env.FIREBASE_SERVICE_ACCOUNT,
     PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
     PAYSTACK_CURRENCY: process.env.PAYSTACK_CURRENCY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    MAIL_FROM: process.env.MAIL_FROM,
+    CRON_SECRET: process.env.CRON_SECRET,
+    ADMIN_SECRET: process.env.ADMIN_SECRET,
+    ADMIN_EMAILS: process.env.ADMIN_EMAILS,
   };
 }
 

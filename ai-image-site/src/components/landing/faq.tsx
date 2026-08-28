@@ -21,7 +21,7 @@ const QA = [
   },
   {
     q: "How do I buy credits?",
-    a: "Open the studio and tap Top up, or pick a pack on the pricing page. Credits land on your account as soon as payment succeeds, and they never expire.",
+    a: "New accounts start with 20 credits. After that, open the studio and tap Top up, or pick a pack on the pricing page. Credits land as soon as payment succeeds, and they never expire.",
   },
   {
     q: "Who owns the output?",

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import {
   confirmPasswordReset,
@@ -20,10 +19,13 @@ import { SITE_URL, studioAuthHref, studioUrl } from "@/lib/site";
 
 type Step = "request" | "sent" | "confirm" | "done";
 
-export function ResetPasswordPage() {
-  const searchParams = useSearchParams();
-  const oobCode = searchParams.get("oobCode");
-  const mode = searchParams.get("mode");
+export function ResetPasswordPage({
+  oobCode,
+  mode,
+}: {
+  oobCode: string | null;
+  mode: string | null;
+}) {
 
   const [step, setStep] = useState<Step>(() =>
     oobCode && (!mode || mode === "resetPassword") ? "confirm" : "request",

@@ -3,6 +3,7 @@ export type StudioUser = {
   email: string;
   creditBalance: number;
   displayName?: string | null;
+  isAdmin?: boolean;
 };
 
 export type StudioJob = {
@@ -30,6 +31,7 @@ export type DashboardView =
   | "influencers"
   | "create-influencer"
   | "affiliate"
+  | "audience"
   | "library"
   | "explore";
 

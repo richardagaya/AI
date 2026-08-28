@@ -180,7 +180,10 @@ export async function POST(req: Request) {
     const msg = e instanceof Error ? e.message : "UNKNOWN";
     console.error("[generate] create job failed", msg);
     if (msg === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+      return NextResponse.json(
+        { error: "You're out of credits. Top up in the studio to keep generating." },
+        { status: 402 },
+      );
     }
     if (msg === "USER_NOT_FOUND") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

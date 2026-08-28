@@ -11,7 +11,7 @@ import type { AuthMode } from "./auth-dialog";
 
 const HIGHLIGHTS = [
   "Image and video models from twelve providers",
-  "Credits deducted per render, never on a failure",
+    "Twenty free credits when you join",
   "Full resolution downloads, no watermark",
 ];
 
