@@ -7,6 +7,7 @@ import { Showcase } from "@/components/landing/showcase";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteNav } from "@/components/landing/site-nav";
 import { StudioPreview } from "@/components/landing/studio-preview";
+import { TrustedBy } from "@/components/landing/trusted-by";
 import { Workflow } from "@/components/landing/workflow";
 import { learnUrl, studioUrl } from "@/lib/site";
 
@@ -23,6 +24,7 @@ export function LandingPage() {
       />
       <main>
         <Hero startHref={startHref} />
+        <TrustedBy />
         <MarqueeStrip />
         <Showcase />
         <StudioPreview />
