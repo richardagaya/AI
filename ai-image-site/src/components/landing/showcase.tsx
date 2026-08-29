@@ -39,10 +39,6 @@ export function Showcase() {
             A wall of frames that
             <span className="font-serif italic font-normal text-solar"> nobody approved</span>
           </h2>
-          <p className="max-w-sm text-[0.95rem] leading-relaxed text-frost-dim">
-            Every tile below started as one line of text. Hover any frame to read
-            the exact prompt that produced it.
-          </p>
         </div>
       </Reveal>
 
@@ -84,7 +80,7 @@ export function Showcase() {
                 : "lg:col-span-2 lg:row-span-2",
             )}
           >
-            <MediaCard media={m} play="hover" className="size-full" />
+            <MediaCard media={m} play="hover" showCaption={false} className="size-full" />
           </motion.div>
         ))}
       </motion.div>

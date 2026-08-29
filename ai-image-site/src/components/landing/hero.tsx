@@ -118,6 +118,7 @@ export function Hero({ startHref }: { startHref: string }) {
             <MediaCard
               media={SHOWCASE[0]}
               priority
+              showCaption={false}
               className="size-full shadow-[0_50px_100px_-40px_rgba(0,0,0,0.9)]"
             />
           </motion.div>
@@ -126,14 +127,14 @@ export function Hero({ startHref }: { startHref: string }) {
             style={{ x: shiftB }}
             className="absolute top-0 right-0 h-[44%] w-[42%]"
           >
-            <MediaCard media={SHOWCASE[2]} priority className="size-full" />
+            <MediaCard media={SHOWCASE[2]} priority showCaption={false} className="size-full" />
           </motion.div>
 
           <motion.div
             style={{ x: shiftA }}
             className="absolute right-2 bottom-2 h-[46%] w-[46%]"
           >
-            <MediaCard media={SHOWCASE[1]} className="size-full" />
+            <MediaCard media={SHOWCASE[1]} showCaption={false} className="size-full" />
           </motion.div>
 
           <motion.div
