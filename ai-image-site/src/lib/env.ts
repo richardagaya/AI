@@ -58,7 +58,7 @@ const EnvSchema = z.object({
     z.enum(["NGN", "USD", "GHS", "ZAR", "KES"]).optional(),
   ),
 
-  // Transactional email (welcome mail 5 minutes after signup)
+  // Transactional email (welcome mail on signup)
   RESEND_API_KEY: optionalSecret,
   MAIL_FROM: optionalSecret,
   // Protects /api/cron/welcome. Vercel Cron sends this as Bearer automatically

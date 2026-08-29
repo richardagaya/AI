@@ -3,8 +3,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { SIGNUP_CREDITS } from "@/lib/credits";
 import { getAdminDb, getAdminInitError } from "@/lib/firebaseAdmin";
 import { fsGet, fsSet } from "@/lib/firestoreRest";
-
-const WELCOME_DELAY_MS = 5 * 60 * 1000;
+import { mailConfigured, sendEmail, welcomeEmail } from "@/lib/mail";
 
 export type StudioAccount = {
   id: string;
@@ -22,8 +21,28 @@ function firstName(value: unknown): string | null {
 function welcomeFields() {
   return {
     welcomeEmailSent: false,
-    welcomeEmailDueAt: new Date(Date.now() + WELCOME_DELAY_MS).toISOString(),
+    welcomeEmailDueAt: new Date().toISOString(),
   };
+}
+
+async function sendWelcomeNow(
+  email: string | null | undefined,
+  displayName: string | null,
+  mark: (fields: Record<string, unknown>) => Promise<void>,
+) {
+  const to = email?.trim() ?? "";
+  if (!to || !mailConfigured()) return;
+  try {
+    await sendEmail({ to, ...welcomeEmail(displayName, to) });
+    await mark({
+      welcomeEmailSent: true,
+      welcomeEmailSentAt: new Date().toISOString(),
+      welcomeEmailError: null,
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    await mark({ welcomeEmailError: message.slice(0, 300) }).catch(() => {});
+  }
 }
 
 export async function loadOrCreateStudioAccount(
@@ -55,6 +74,7 @@ async function provisionWithAdmin(
       ...welcomeFields(),
     };
     await ref.set(data);
+    await sendWelcomeNow(session.email, tokenName, (fields) => ref.update(fields));
     return {
       id: session.userId,
       email: session.email,
@@ -117,6 +137,9 @@ async function provisionWithUserToken(
       ...welcomeFields(),
     };
     await fsSet("users", userId, newUser, token);
+    await sendWelcomeNow(email, tokenName, (fields) =>
+      fsSet("users", userId, { ...newUser, ...fields }, token),
+    );
     return {
       id: userId,
       email,

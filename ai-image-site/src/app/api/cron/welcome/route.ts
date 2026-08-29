@@ -42,7 +42,7 @@ export async function GET(req: Request) {
   for (const doc of snap.docs) {
     const data = doc.data();
     const due = Date.parse(String(data.welcomeEmailDueAt ?? ""));
-    if (!Number.isFinite(due) || due > now) {
+    if (Number.isFinite(due) && due > now) {
       skipped += 1;
       continue;
     }
