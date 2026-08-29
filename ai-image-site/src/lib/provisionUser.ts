@@ -28,7 +28,7 @@ function welcomeFields() {
 async function sendWelcomeNow(
   email: string | null | undefined,
   displayName: string | null,
-  mark: (fields: Record<string, unknown>) => Promise<void>,
+  mark: (fields: Record<string, unknown>) => Promise<unknown>,
 ) {
   const to = email?.trim() ?? "";
   if (!to || !mailConfigured()) return;
