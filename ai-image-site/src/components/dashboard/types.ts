@@ -28,6 +28,7 @@ export type DashboardView =
   | "image"
   | "video"
   | "ugc-ads"
+  | "creative-studio"
   | "influencers"
   | "create-influencer"
   | "affiliate"

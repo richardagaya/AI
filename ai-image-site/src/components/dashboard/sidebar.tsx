@@ -11,6 +11,7 @@ import {
   LogOut,
   Megaphone,
   Mail,
+  Palette,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const NAV: NavGroup[] = [
       { view: "image", label: "Generate Image", icon: ImagePlus },
       { view: "video", label: "Generate Video", icon: Clapperboard },
       { view: "ugc-ads", label: "UGC Ads", icon: Megaphone },
+      { view: "creative-studio", label: "Creative Studio", icon: Palette },
     ],
   },
   {

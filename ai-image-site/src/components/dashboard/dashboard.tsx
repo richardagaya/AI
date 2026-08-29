@@ -9,6 +9,7 @@ import { dashboardViewAtom, userAtom } from "@/lib/store";
 import { Sidebar } from "./sidebar";
 import { AffiliateView } from "./views/affiliate-view";
 import { AudienceView } from "./views/audience-view";
+import { CreativeStudioView } from "./views/creative-studio-view";
 import { CreateInfluencerView } from "./views/create-influencer-view";
 import { ImageView } from "./views/image-view";
 import { InfluencersView } from "./views/influencers-view";
@@ -104,6 +105,7 @@ export function Dashboard() {
               {view === "image" && <ImageView onNavigate={navigate} />}
               {view === "video" && <VideoView />}
               {view === "ugc-ads" && <UgcAdsView />}
+              {view === "creative-studio" && <CreativeStudioView />}
               {view === "influencers" && (
                 <InfluencersView onNavigate={navigate} />
               )}
