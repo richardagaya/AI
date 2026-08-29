@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { Composer } from "../composer";
 import { GalleryGrid } from "../gallery-grid";
-import { MediaWall } from "../media-wall";
+// import { MediaWall } from "../media-wall";
 import { jobsAtom, userAtom } from "@/lib/store";
 import { firstNameOf } from "@/lib/utils";
 import type { DashboardView } from "../types";
@@ -73,8 +73,9 @@ export function ImageView({
         <GalleryGrid jobs={jobs.slice(0, 6)} />
       </section>
 
-      {/* Community media wall */}
+      {/* Community media wall
       <MediaWall className="mt-16" />
+      */}
     </div>
   );
 }

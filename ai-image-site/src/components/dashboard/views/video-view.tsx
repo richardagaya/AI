@@ -2,7 +2,7 @@
 
 import { Clapperboard, Film, ImagePlus, MonitorPlay } from "lucide-react";
 import { Composer } from "../composer";
-import { MediaWall } from "../media-wall";
+// import { MediaWall } from "../media-wall";
 
 const FEATURES = [
   {
@@ -60,12 +60,14 @@ export function VideoView() {
         ))}
       </div>
 
+      {/*
       <MediaWall
         className="mt-16"
         title="Community clips"
         subtitle="Videos rendered this week"
         videosOnly
       />
+      */}
     </div>
   );
 }
