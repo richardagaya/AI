@@ -42,8 +42,8 @@ export const HERO_BACKGROUND: BackgroundVideo = {
 
 /** Login / signup popup */
 export const AUTH_BACKGROUND: BackgroundVideo = {
-  src: "https://assets.mixkit.co/videos/39880/39880-720.mp4",
-  poster: "https://assets.mixkit.co/videos/39880/39880-thumb-720-0.jpg",
+  src: "/media_pool/landingpage.mp4",
+  poster: "/media_pool/image1.webp",
 };
 
 /** Bottom "Start creating" call-to-action */

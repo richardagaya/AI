@@ -48,6 +48,18 @@ export const PAGE_SURFACE_URL: Record<PageSurface, string> = {
   learn: LEARN_URL,
 };
 
+/**
+ * In-app links stay on localhost during `next dev`, even if `.env.local` has
+ * production NEXT_PUBLIC_*_URL values (needed for mail, Paystack, etc.).
+ */
+function inAppSurfaceUrl(surface: PageSurface): string {
+  if (process.env.NODE_ENV !== "production") {
+    const root = SURFACE_ROOT[surface];
+    return root ? `${DEV_ORIGIN}${root}` : DEV_ORIGIN;
+  }
+  return PAGE_SURFACE_URL[surface];
+}
+
 function hostOf(url: string): string {
   try {
     return hostnameOf(new URL(url).host);
@@ -115,7 +127,8 @@ export function surfaceForHost(host: string | null | undefined): Surface | null 
 
 /** Absolute URL of the studio, optionally opening straight into an auth mode. */
 export function studioUrl(mode?: "login" | "signup"): string {
-  return mode ? `${STUDIO_URL}?mode=${mode}` : STUDIO_URL;
+  const base = inAppSurfaceUrl("studio");
+  return mode ? `${base}?mode=${mode}` : base;
 }
 
 /**
@@ -124,13 +137,8 @@ export function studioUrl(mode?: "login" | "signup"): string {
  */
 function studioSurfaceHref(path: string): string {
   const trimmed = path.startsWith("/") ? path : `/${path}`;
-  if (typeof window === "undefined") {
-    return `${STUDIO_URL.replace(/\/+$/, "")}${trimmed === "/" ? "" : trimmed}`;
-  }
-  if (window.location.pathname === "/studio" || window.location.pathname.startsWith("/studio/")) {
-    return trimmed === "/" ? "/studio" : `/studio${trimmed}`;
-  }
-  return trimmed;
+  const suffix = trimmed === "/" ? "" : trimmed;
+  return `${inAppSurfaceUrl("studio")}${suffix}`;
 }
 
 /** Dedicated password-reset page on the studio host. */
@@ -145,12 +153,13 @@ export function studioAuthHref(mode?: "login" | "signup"): string {
 
 /** Absolute URL of the learn index, or of one lesson. */
 export function learnUrl(slug?: string): string {
-  return slug ? `${LEARN_URL}/${slug}` : LEARN_URL;
+  const base = inAppSurfaceUrl("learn");
+  return slug ? `${base}/${slug}` : base;
 }
 
 /** Absolute URL of the credits / pricing page. */
 export function pricingUrl(): string {
-  return `${SITE_URL}/pricing`;
+  return `${inAppSurfaceUrl("site")}/pricing`;
 }
 
 /**
