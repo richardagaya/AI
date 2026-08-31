@@ -161,21 +161,3 @@ export const SHOWCASE: Media[] = [
     tag: "Abstract",
   },
 ];
-
-/* ── 3. PROMPT TICKER ──────────────────────────────────────────────────
- * Text-only scrolling strip. Add/remove lines freely. */
-
-export const PROMPT_TICKER = [
-  "pikachu trainer · anime style",
-  "gothic waifu · dark fantasy",
-  "legendary pokemon fusion",
-  "cyberpunk elf · neon rain",
-  "mature scene · soft lighting",
-  "dragonball-style warrior",
-  "mermaid bioluminescent art",
-  "fire-type gym leader",
-  "eevee girl · pastel dream",
-  "psychic-type aura · detailed",
-  "frost sorceress · silver hair",
-  "kitsune priestess · gold leaf",
-];

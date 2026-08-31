@@ -1,8 +1,7 @@
 "use client";
 
 import { MediaCard } from "@/components/ui/media-card";
-import { Snowflake } from "@/components/brand/snowflake";
-import { PROMPT_TICKER, SHOWCASE } from "@/lib/media";
+import { SHOWCASE } from "@/lib/media";
 
 export function MarqueeStrip() {
   const row = [...SHOWCASE, ...SHOWCASE];
@@ -19,20 +18,6 @@ export function MarqueeStrip() {
               showCaption={false}
               className="h-40 w-30 shrink-0 rounded-2xl sm:h-52 sm:w-40"
             />
-          ))}
-        </div>
-      </div>
-
-      <div className="edge-fade mt-6 overflow-hidden">
-        <div className="flex w-max animate-marquee-slow items-center gap-10 [animation-direction:reverse]">
-          {[...PROMPT_TICKER, ...PROMPT_TICKER].map((p, i) => (
-            <span
-              key={i}
-              className="flex items-center gap-3 font-mono text-[0.7rem] tracking-[0.1em] whitespace-nowrap text-frost-faint uppercase"
-            >
-              <Snowflake className="size-3 text-solar/60" strokeWidth={7} />
-              {p}
-            </span>
           ))}
         </div>
       </div>
