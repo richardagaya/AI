@@ -1,97 +1,36 @@
 "use client";
 
-import { motion } from "motion/react";
-import { Reveal, SectionLabel } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
 
 const COMPANIES = [
-  { name: "Adobe", href: "https://www.adobe.com", Logo: AdobeMark },
-  { name: "Canva", href: "https://www.canva.com", Logo: CanvaMark },
-  { name: "Perplexity", href: "https://www.perplexity.ai", Logo: PerplexityMark },
-  { name: "Shopify", href: "https://www.shopify.com", Logo: ShopifyMark },
-  { name: "Quora", href: "https://www.quora.com", Logo: QuoraMark },
+  { name: "Adobe", Logo: AdobeMark },
+  { name: "Canva", Logo: CanvaMark },
+  { name: "Perplexity", Logo: PerplexityMark },
+  { name: "Shopify", Logo: ShopifyMark },
+  { name: "Quora", Logo: QuoraMark },
 ] as const;
 
 export function TrustedBy() {
-  const ticker = [...COMPANIES, ...COMPANIES, ...COMPANIES];
+  const row = [...COMPANIES, ...COMPANIES];
+  const ticker = [...row, ...row];
 
   return (
-    <section className="relative overflow-hidden border-y border-line/60 bg-ink-soft/35 py-16 sm:py-20">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_0%,rgba(255,212,38,0.07),transparent_60%)]" />
+    <section className="relative overflow-hidden py-10 sm:py-12">
+      <p className="text-center text-[0.64rem] font-semibold tracking-[0.22em] uppercase text-frost-faint">
+        Companies that trust us
+      </p>
 
-      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <SectionLabel className="justify-center">
-            Companies that trust this stack
-          </SectionLabel>
-          <h2 className="text-[clamp(1.7rem,4vw,2.6rem)] leading-[1.05] font-semibold tracking-[-0.04em]">
-            The same models that run at
-            <span className="font-serif font-normal italic text-solar"> the big rooms.</span>
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-[0.88rem] leading-relaxed text-frost-faint">
-            Minsuro renders on fal — the generative layer teams at Adobe, Canva,
-            Perplexity, Shopify and Quora already ship with.
-          </p>
-        </Reveal>
-
-        <div className="relative mt-10">
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-24 -translate-x-1/2 bg-gradient-to-r from-transparent via-solar/20 to-transparent blur-md animate-trusted-scan" />
-
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {COMPANIES.map((c, i) => (
-              <motion.li
-                key={c.name}
-                initial={{ opacity: 0, y: 22, filter: "blur(8px)" }}
-                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{
-                  duration: 0.7,
-                  delay: i * 0.08,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-              >
-                <a
-                  href={c.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(
-                    "group relative flex h-28 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl",
-                    "border border-line/70 bg-ink-card/50",
-                    "transition-all duration-500 hover:-translate-y-1.5 hover:border-solar/45 hover:bg-ink-card",
-                    "hover:shadow-[0_24px_60px_-36px_rgba(255,212,38,0.55)]",
-                  )}
-                >
-                  <span className="pointer-events-none absolute inset-0 overflow-hidden opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                    <span className="absolute inset-y-0 w-1/3 animate-shine bg-gradient-to-r from-transparent via-white/18 to-transparent" />
-                  </span>
-                  <span
-                    className="animate-float-y text-frost-dim transition-colors duration-500 group-hover:text-frost"
-                    style={{ animationDelay: `${i * 0.55}s` }}
-                  >
-                    <c.Logo />
-                  </span>
-                  <span className="text-[0.72rem] font-semibold tracking-[0.18em] uppercase text-frost-faint transition-colors duration-500 group-hover:text-solar">
-                    {c.name}
-                  </span>
-                </a>
-              </motion.li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div className="edge-fade group/ticker relative mt-10 overflow-hidden">
-        <div className="flex w-max animate-marquee-logos items-center gap-12 py-2 group-hover/ticker:[animation-play-state:paused]">
+      <div className="edge-fade mt-6 overflow-hidden">
+        <div className="flex w-max animate-marquee-slow items-center gap-10 [animation-direction:reverse] sm:gap-14">
           {ticker.map((c, i) => (
             <span
               key={`${c.name}-${i}`}
-              className="flex items-center gap-3 text-frost-faint/70"
+              className="flex items-center gap-2 text-frost-faint/35"
             >
-              <c.Logo className="size-5" />
-              <span className="text-[0.78rem] font-semibold tracking-[0.2em] uppercase">
+              <c.Logo className="size-4" />
+              <span className="text-[0.62rem] font-medium tracking-[0.16em] uppercase">
                 {c.name}
               </span>
-              <span className="size-1 rounded-full bg-solar/50" />
             </span>
           ))}
         </div>
