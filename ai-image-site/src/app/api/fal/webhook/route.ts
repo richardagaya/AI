@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     const message =
       body.error ||
       body.payload_error ||
-      "fal.ai generation failed";
+      "Generation timed out. Try again in a moment.";
     await ref.update({
       ...jobFailedFields(message),
       updatedAt: Timestamp.now(),

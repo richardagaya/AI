@@ -11,6 +11,7 @@ import { AffiliateView } from "./views/affiliate-view";
 import { AudienceView } from "./views/audience-view";
 import { CreativeStudioView } from "./views/creative-studio-view";
 import { CreateInfluencerView } from "./views/create-influencer-view";
+import { InfluencerStudioView } from "./views/influencer-studio-view";
 import { ImageView } from "./views/image-view";
 import { InfluencersView } from "./views/influencers-view";
 import { LibraryView } from "./views/library-view";
@@ -111,6 +112,9 @@ export function Dashboard() {
               )}
               {view === "create-influencer" && (
                 <CreateInfluencerView onNavigate={navigate} />
+              )}
+              {view === "influencer" && (
+                <InfluencerStudioView onNavigate={navigate} />
               )}
               {view === "affiliate" && <AffiliateView />}
               {view === "audience" && user.isAdmin && <AudienceView />}

@@ -39,6 +39,7 @@ export const busyAtom = atom(false);
 export const errorAtom = atom<string | null>(null);
 
 export const dashboardViewAtom = atom<DashboardView>("image");
+export const selectedInfluencerIdAtom = atom<string | null>(null);
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
@@ -173,6 +174,7 @@ export const logoutAtom = atom(null, async (_get, set) => {
     await signOut(firebaseAuth);
     set(userAtom, null);
     set(jobsAtom, []);
+    set(selectedInfluencerIdAtom, null);
   } catch (e) {
     set(errorAtom, errorMessage(e, "Logout failed"));
   } finally {

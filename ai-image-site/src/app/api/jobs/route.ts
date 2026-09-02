@@ -16,6 +16,8 @@ function mapJob(id: string, d: Record<string, unknown>) {
     kind: d.kind ?? null,
     aspect: d.aspect ?? null,
     duration: d.duration ?? null,
+    influencerId: d.influencerId ?? null,
+    lookId: d.lookId ?? null,
     costCredits: d.costCredits,
     error: d.error ?? null,
     createdAt: d.createdAt ?? new Date().toISOString(),

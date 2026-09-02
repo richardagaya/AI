@@ -157,7 +157,12 @@ export function Sidebar({
                 <NavButton
                   key={item.view}
                   item={item}
-                  active={activeView === item.view}
+                  active={
+                    activeView === item.view ||
+                    (item.view === "influencers" && activeView === "influencer") ||
+                    (item.view === "create-influencer" &&
+                      activeView === "create-influencer")
+                  }
                   onClick={() => onNavigate(item.view)}
                 />
               ))}

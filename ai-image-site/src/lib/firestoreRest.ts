@@ -185,11 +185,13 @@ export async function fsQuery(
  *   3. Write the new job document
  *   4. Decrement creditBalance
  */
-export async function fsCreateJobTx(
+export async function fsCreateJobsTx(
   userId: string,
-  jobId: string,
-  jobData: Record<string, unknown>,
-  costCredits: number,
+  jobs: Array<{
+    id: string;
+    data: Record<string, unknown>;
+    costCredits: number;
+  }>,
   _token: string,
 ): Promise<void> {
   const adminDb = getAdminDb();
@@ -198,16 +200,29 @@ export async function fsCreateJobTx(
       `Firebase Admin is not configured (${getAdminInitError() || "unknown"}). Set FIREBASE_SERVICE_ACCOUNT.`,
     );
   }
+  const total = jobs.reduce((sum, job) => sum + job.costCredits, 0);
 
   await adminDb.runTransaction(async (tx) => {
     const userRef = adminDb.collection("users").doc(userId);
     const userSnap = await tx.get(userRef);
     if (!userSnap.exists) throw new Error("USER_NOT_FOUND");
     const balance = Number(userSnap.data()?.creditBalance ?? 0);
-    if (balance < costCredits) throw new Error("INSUFFICIENT_CREDITS");
-    tx.set(adminDb.collection("jobs").doc(jobId), jobData);
+    if (balance < total) throw new Error("INSUFFICIENT_CREDITS");
+    for (const job of jobs) {
+      tx.set(adminDb.collection("jobs").doc(job.id), job.data);
+    }
     tx.update(userRef, {
-      creditBalance: FieldValue.increment(-costCredits),
+      creditBalance: FieldValue.increment(-total),
     });
   });
+}
+
+export async function fsCreateJobTx(
+  userId: string,
+  jobId: string,
+  jobData: Record<string, unknown>,
+  costCredits: number,
+  token: string,
+): Promise<void> {
+  await fsCreateJobsTx(userId, [{ id: jobId, data: jobData, costCredits }], token);
 }

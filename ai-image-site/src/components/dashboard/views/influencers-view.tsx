@@ -1,19 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
+import { useSetAtom } from "jotai";
+import { firebaseAuth } from "@/lib/firebase";
+import { apiUrl } from "@/lib/site";
+import { selectedInfluencerIdAtom } from "@/lib/store";
+import type { StudioInfluencer } from "@/lib/influencers";
 import type { DashboardView } from "../types";
+import { FaceThumb } from "../face-thumb";
 
 export function InfluencersView({
   onNavigate,
 }: {
   onNavigate: (v: DashboardView) => void;
 }) {
+  const setSelected = useSetAtom(selectedInfluencerIdAtom);
+  const [list, setList] = useState<StudioInfluencer[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await firebaseAuth.currentUser?.getIdToken();
+        const res = await fetch(apiUrl("/api/influencers"), {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          influencers?: StudioInfluencer[];
+          error?: string;
+        };
+        if (!res.ok) throw new Error(data.error || "Could not load influencers");
+        if (!cancelled) setList(data.influencers ?? []);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Could not load influencers");
+          setList([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function open(id: string) {
+    setSelected(id);
+    onNavigate("influencer");
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-10 pb-16 sm:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[0.66rem] font-bold tracking-[0.28em] uppercase text-nova-soft">
-            Synthetic talent agency
+            Synthetic talent
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
             Your{" "}
@@ -21,6 +63,9 @@ export function InfluencersView({
               AI influencers
             </span>
           </h1>
+          <p className="mt-2 max-w-md text-[0.86rem] text-frost-faint">
+            Upload a photo, then prompt whatever scene you want.
+          </p>
         </div>
         <button
           onClick={() => onNavigate("create-influencer")}
@@ -30,6 +75,63 @@ export function InfluencersView({
           New influencer
         </button>
       </header>
+
+      {error && (
+        <p className="mt-8 rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-[0.82rem] text-red-300">
+          {error}
+        </p>
+      )}
+
+      {list === null && (
+        <p className="mt-16 text-center text-[0.84rem] text-frost-faint">
+          Loading roster…
+        </p>
+      )}
+
+      {list && list.length === 0 && !error && (
+        <div className="mt-16 grid place-items-center rounded-3xl border border-dashed border-line/80 bg-ink-card/30 px-6 py-20 text-center">
+          <p className="text-[0.95rem] font-medium">No talent yet</p>
+          <p className="mt-1.5 max-w-sm text-[0.84rem] text-frost-faint">
+            Upload a photo of the person to add them to your roster.
+          </p>
+          <button
+            onClick={() => onNavigate("create-influencer")}
+            className="mt-6 cursor-pointer rounded-full border border-solar/40 bg-solar/10 px-5 py-2 text-[0.8rem] font-semibold text-solar"
+          >
+            Cast the first one
+          </button>
+        </div>
+      )}
+
+      {list && list.length > 0 && (
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {list.map((person) => (
+            <li key={person.id}>
+              <button
+                onClick={() => open(person.id)}
+                className="group w-full cursor-pointer overflow-hidden rounded-3xl border border-line/70 bg-ink-card/60 text-left transition-colors hover:border-solar/40"
+              >
+                <FaceThumb
+                  influencerId={person.id}
+                  index={0}
+                  photo={person.photos[0] ?? { url: null, path: null }}
+                  alt={person.name}
+                  className="aspect-2/3 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                />
+                <div className="px-4 py-3.5">
+                  <p className="text-[0.95rem] font-semibold tracking-[-0.02em]">
+                    {person.name}
+                  </p>
+                  <p className="mt-0.5 text-[0.72rem] text-frost-faint">
+                    {person.photos.length}{" "}
+                    {person.photos.length === 1 ? "reference" : "references"}
+                  </p>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

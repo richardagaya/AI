@@ -22,7 +22,8 @@ export type ModelFamily =
   | "wan"
   | "horse"
   | "omni"
-  | "zimage";
+  | "zimage"
+  | "instantid";
 
 export type FalModelDef = {
   /** Registry id used across the app + stored on jobs */
@@ -533,7 +534,23 @@ export const VIDEO_MODELS: FalModelDef[] = [
   },
 ];
 
-const ALL_MODELS = [...IMAGE_MODELS, ...VIDEO_MODELS];
+/** Face-lock portrait model. Hidden from the image/video picker. */
+export const LOOK_MODEL: FalModelDef = {
+  id: "look",
+  kind: "image",
+  label: "Look",
+  tagline: "Same face, new scene",
+  provider: "Studio",
+  family: "instantid",
+  endpoints: {
+    text: "fal-ai/instantid",
+    image: "fal-ai/instantid",
+  },
+  cost: { text: 2, image: 2 },
+  aspects: ["2:3", "1:1", "3:2", "9:16"],
+};
+
+const ALL_MODELS = [...IMAGE_MODELS, ...VIDEO_MODELS, LOOK_MODEL];
 
 export function getModel(id: string): FalModelDef | undefined {
   return ALL_MODELS.find((m) => m.id === id);

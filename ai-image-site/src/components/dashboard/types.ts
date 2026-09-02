@@ -21,6 +21,8 @@ export type StudioJob = {
   kind?: "image" | "video";
   aspect?: string;
   duration?: string;
+  influencerId?: string | null;
+  lookId?: string | null;
   outputKind?: "image" | "video";
 };
 
@@ -31,6 +33,7 @@ export type DashboardView =
   | "creative-studio"
   | "influencers"
   | "create-influencer"
+  | "influencer"
   | "affiliate"
   | "audience"
   | "library"

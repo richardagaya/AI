@@ -12,6 +12,7 @@ import {
   resolveDuration,
   type FalModelDef,
 } from "./fal-models";
+import { LOOK_NEGATIVE_PROMPT } from "./influencers";
 
 let configured = false;
 function ensureConfigured() {
@@ -63,6 +64,26 @@ function buildImageInput(
   s: RunSettings,
   imageUrl: string | null,
 ): Record<string, unknown> {
+  if (model.family === "instantid") {
+    if (!imageUrl) {
+      throw new Error("A reference photo is required to generate this look.");
+    }
+    return {
+      face_image_url: imageUrl,
+      prompt: s.prompt,
+      style: "(No style)",
+      // Don't copy the reference crop. Identity stays; the prompt drives the scene.
+      controlnet_conditioning_scale: 0,
+      identity_controlnet_conditioning_scale: 0.8,
+      ip_adapter_scale: 0.65,
+      enhance_face_region: true,
+      enable_lcm: false,
+      num_inference_steps: 30,
+      guidance_scale: 3,
+      negative_prompt: s.negativePrompt?.trim() || LOOK_NEGATIVE_PROMPT,
+    };
+  }
+
   const size =
     model.sizes?.[resolveAspect(model, s.aspect)] ??
     Object.values(model.sizes ?? {})[0];
@@ -215,6 +236,26 @@ function buildVideoInput(
   return input;
 }
 
+/** User-facing copy when the provider rejects a job for billing or internals. */
+export const GENERATION_TIMEOUT_MESSAGE =
+  "Generation timed out. Try again in a moment.";
+
+export function toPublicGenerationError(message: string): string {
+  const h = message.toLowerCase();
+  if (
+    h.includes("top_up") ||
+    h.includes("user is locked") ||
+    h.includes("out of funds") ||
+    h.includes("billing") ||
+    h.includes("fal.ai") ||
+    h.includes("insufficient") ||
+    h.includes("payment required")
+  ) {
+    return GENERATION_TIMEOUT_MESSAGE;
+  }
+  return message;
+}
+
 /** Turn fal.ai's terse API errors into something a user can act on. */
 function readableFalError(e: unknown): Error {
   const raw = e instanceof Error ? e.message : String(e);
@@ -223,16 +264,27 @@ function readableFalError(e: unknown): Error {
   ).toLowerCase();
   const haystack = `${raw} ${body}`.toLowerCase();
 
-  if (haystack.includes("top_up") || haystack.includes("user is locked")) {
-    return new Error(
-      "The fal.ai account is out of funds — add balance at fal.ai/dashboard/billing.",
-    );
+  if (
+    haystack.includes("top_up") ||
+    haystack.includes("user is locked") ||
+    haystack.includes("out of funds") ||
+    haystack.includes("billing") ||
+    haystack.includes("insufficient")
+  ) {
+    return new Error(GENERATION_TIMEOUT_MESSAGE);
   }
   if (haystack.includes("invalid key") || haystack.includes("unauthorized")) {
-    return new Error("The fal.ai API key is invalid — check FAL_KEY in .env.local.");
+    return new Error(GENERATION_TIMEOUT_MESSAGE);
   }
   if (haystack.includes("exhausted") || haystack.includes("rate limit")) {
-    return new Error("fal.ai rate limit reached — try again in a moment.");
+    return new Error("The queue is busy. Try again in a moment.");
+  }
+  if (
+    haystack.includes("unprocessable") ||
+    haystack.includes("validation") ||
+    haystack.includes("422")
+  ) {
+    return new Error("Generation couldn't start. Try a different prompt.");
   }
   if (
     haystack.includes("content policy") ||
@@ -241,7 +293,7 @@ function readableFalError(e: unknown): Error {
   ) {
     return new Error("The model rejected this prompt under its content policy.");
   }
-  return new Error(raw);
+  return new Error(toPublicGenerationError(raw));
 }
 
 /** Pull a CDN URL out of a fal image/video payload. */

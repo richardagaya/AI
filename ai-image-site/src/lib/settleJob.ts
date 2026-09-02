@@ -33,7 +33,7 @@ export async function settleRunningJob(
     const fields =
       queueStatus === "COMPLETED"
         ? await jobSucceededFields(await getFalQueueResult(endpoint, requestId, kind))
-        : jobFailedFields("fal.ai generation failed");
+        : jobFailedFields("Generation timed out. Try again in a moment.");
 
     await adminDb.collection("jobs").doc(jobId).set(fields, { merge: true });
     return { ...data, ...fields };

@@ -1,5 +1,5 @@
 import { persistRemoteFile } from "@/lib/storage";
-import { parseFalPayload, type FalOutput } from "@/lib/fal";
+import { parseFalPayload, toPublicGenerationError, type FalOutput } from "@/lib/fal";
 
 export type JobResultFields = {
   status: "succeeded" | "failed";
@@ -16,7 +16,7 @@ export function jobFailedFields(message: string): JobResultFields {
     outputImagePath: null,
     outputUrl: null,
     outputKind: null,
-    error: message.slice(0, 1000),
+    error: toPublicGenerationError(message).slice(0, 1000),
     updatedAt: new Date().toISOString(),
   };
 }

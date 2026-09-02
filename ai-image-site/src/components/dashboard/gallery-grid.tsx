@@ -46,6 +46,7 @@ export function GalleryGrid({
           job.outputKind === "video" || job.mode.includes("video");
         const model = getModel(job.model);
         const modelLabel = model?.label ?? job.model;
+        const hideLookModel = job.model === "look";
         return (
           <article
             key={job.id}
@@ -105,7 +106,7 @@ export function GalleryGrid({
 
             <div className="p-4">
               <div className="flex items-center gap-2">
-                {model && (
+                {model && !hideLookModel && (
                   <ModelLogo model={model} className="size-5 rounded-md p-0.5 [&>img]:size-3.5" />
                 )}
                 <span
@@ -117,7 +118,9 @@ export function GalleryGrid({
                   {job.status}
                 </span>
                 <span className="min-w-0 truncate font-mono text-[0.62rem] text-frost-faint">
-                  {modelLabel} · {job.mode} · {job.costCredits} cr
+                  {hideLookModel
+                    ? `${job.costCredits} cr`
+                    : `${modelLabel} · ${job.mode} · ${job.costCredits} cr`}
                 </span>
                 <span className="ml-auto shrink-0 font-mono text-[0.62rem] text-frost-faint">
                   {new Date(job.createdAt).toLocaleTimeString([], {

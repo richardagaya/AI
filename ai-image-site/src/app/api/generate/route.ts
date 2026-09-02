@@ -7,6 +7,7 @@ import {
   submitFalJob,
   waitForFalJob,
 } from "@/lib/fal";
+import { publicWebhookUrl } from "@/lib/falWebhook";
 import { jobFailedFields, jobSucceededFields } from "@/lib/jobResult";
 import { isPromptDisallowed } from "@/lib/moderation";
 import { saveUploadedFile } from "@/lib/storage";
@@ -19,53 +20,6 @@ import {
 } from "@/lib/fal-models";
 
 export const maxDuration = 60;
-
-function isLoopbackHost(host: string): boolean {
-  const h = host.toLowerCase();
-  return (
-    h === "localhost" ||
-    h === "127.0.0.1" ||
-    h.endsWith(".localhost") ||
-    h.endsWith(".local")
-  );
-}
-
-/**
- * fal will not follow apex→www redirects, and will not deliver to loopback.
- * Prefer the host that actually handled this request (studio.*) over BASE_URL,
- * which is often the marketing apex and 308s away.
- */
-function publicWebhookUrl(req: Request, jobId: string): string | null {
-  const forwarded = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwarded || req.headers.get("host") || "";
-  const hostname = host.replace(/:\d+$/, "");
-  if (hostname && isLoopbackHost(hostname)) return null;
-
-  const proto =
-    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
-  const bases = [
-    host ? `${proto}://${host}` : "",
-    env.NEXT_PUBLIC_STUDIO_URL,
-    env.BASE_URL,
-  ].filter(Boolean);
-
-  for (const base of bases) {
-    let url: URL;
-    try {
-      url = new URL("/api/fal/webhook", base);
-    } catch {
-      continue;
-    }
-    if (isLoopbackHost(url.hostname)) continue;
-    // Vercel 308s example.com → www.example.com; fal drops the POST.
-    if (url.hostname.split(".").length === 2 && !/^\d/.test(url.hostname)) {
-      url.hostname = `www.${url.hostname}`;
-    }
-    url.searchParams.set("jobId", jobId);
-    return url.href;
-  }
-  return null;
-}
 
 export async function POST(req: Request) {
   const session = await getSession(req);
