@@ -152,10 +152,9 @@ export default function AppClient({
     refreshJobs().catch(() => {});
     const timer = setInterval(() => {
       refreshJobs().catch(() => {});
-      refreshMe().catch(() => {});
-    }, 2500);
+    }, 4000);
     return () => clearInterval(timer);
-  }, [userId, refreshJobs, refreshMe]);
+  }, [userId, refreshJobs]);
 
   function openAuth(mode: AuthMode = "signup") {
     setError(null);

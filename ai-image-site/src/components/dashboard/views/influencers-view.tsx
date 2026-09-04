@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import { useSetAtom } from "jotai";
+import { Plus, Trash2 } from "lucide-react";
+import { useAtom } from "jotai";
 import { firebaseAuth } from "@/lib/firebase";
 import { apiUrl } from "@/lib/site";
 import { selectedInfluencerIdAtom } from "@/lib/store";
@@ -15,9 +15,11 @@ export function InfluencersView({
 }: {
   onNavigate: (v: DashboardView) => void;
 }) {
-  const setSelected = useSetAtom(selectedInfluencerIdAtom);
+  const [selected, setSelected] = useAtom(selectedInfluencerIdAtom);
   const [list, setList] = useState<StudioInfluencer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +50,28 @@ export function InfluencersView({
   function open(id: string) {
     setSelected(id);
     onNavigate("influencer");
+  }
+
+  async function remove(person: StudioInfluencer) {
+    if (deletingId) return;
+    setDeletingId(person.id);
+    setError(null);
+    try {
+      const token = await firebaseAuth.currentUser?.getIdToken();
+      const res = await fetch(apiUrl(`/api/influencers/${person.id}`), {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Could not delete influencer");
+      setList((prev) => (prev ?? []).filter((p) => p.id !== person.id));
+      if (selected === person.id) setSelected(null);
+      setConfirmId(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete influencer");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (
@@ -106,7 +130,7 @@ export function InfluencersView({
       {list && list.length > 0 && (
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((person) => (
-            <li key={person.id}>
+            <li key={person.id} className="relative">
               <button
                 onClick={() => open(person.id)}
                 className="group w-full cursor-pointer overflow-hidden rounded-3xl border border-line/70 bg-ink-card/60 text-left transition-colors hover:border-solar/40"
@@ -128,6 +152,44 @@ export function InfluencersView({
                   </p>
                 </div>
               </button>
+
+              {confirmId === person.id ? (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-ink/88 p-4 text-center backdrop-blur-md">
+                  <p className="text-[0.92rem] font-semibold">
+                    Delete {person.name}?
+                  </p>
+                  <p className="mt-1 text-[0.74rem] text-frost-faint">
+                    This cannot be undone.
+                  </p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <button
+                      type="button"
+                      disabled={deletingId === person.id}
+                      onClick={() => void remove(person)}
+                      className="cursor-pointer rounded-full bg-red-500 px-4 py-1.5 text-[0.74rem] font-bold text-white disabled:opacity-50"
+                    >
+                      {deletingId === person.id ? "Deleting…" : "Delete"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deletingId === person.id}
+                      onClick={() => setConfirmId(null)}
+                      className="cursor-pointer rounded-full border border-line/80 px-4 py-1.5 text-[0.74rem] font-semibold text-frost"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  aria-label={`Delete ${person.name}`}
+                  onClick={() => setConfirmId(person.id)}
+                  className="absolute top-2.5 right-2.5 z-10 cursor-pointer rounded-full border border-white/10 bg-ink/75 p-2 text-frost backdrop-blur-md transition-colors hover:border-red-400/40 hover:bg-red-500/20 hover:text-red-300"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>

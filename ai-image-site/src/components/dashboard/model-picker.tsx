@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Search, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { groupByProvider, type FalModelDef } from "@/lib/fal-models";
 import { cn } from "@/lib/utils";
 import { ModelLogo } from "./model-logo";
@@ -10,13 +10,10 @@ export function ModelPicker({
   models,
   value,
   onChange,
-  withImage,
 }: {
   models: FalModelDef[];
   value: FalModelDef;
   onChange: (id: string) => void;
-  /** Show the image-input price when a reference image is attached */
-  withImage: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -76,13 +73,8 @@ export function ModelPicker({
         )}
       >
         <ModelLogo model={value} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[0.82rem] font-semibold text-frost">
-            {value.label}
-          </span>
-          <span className="block truncate text-[0.66rem] text-frost-faint">
-            {value.provider} · {withImage ? value.cost.image : value.cost.text} cr
-          </span>
+        <span className="min-w-0 flex-1 truncate text-[0.82rem] font-semibold text-frost">
+          {value.label}
         </span>
         <ChevronDown
           className={cn(
@@ -136,22 +128,13 @@ export function ModelPicker({
                       )}
                     >
                       <ModelLogo model={m} />
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={cn(
-                            "block truncate text-[0.82rem] font-semibold",
-                            active ? "text-solar" : "text-frost",
-                          )}
-                        >
-                          {m.label}
-                        </span>
-                        <span className="block truncate text-[0.66rem] text-frost-faint">
-                          {m.tagline}
-                        </span>
-                      </span>
-                      <span className="flex shrink-0 items-center gap-1 font-mono text-[0.64rem] font-bold text-frost-faint">
-                        <Sparkles className="size-3 text-solar/70" />
-                        {withImage ? m.cost.image : m.cost.text}
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 truncate text-[0.82rem] font-semibold",
+                          active ? "text-solar" : "text-frost",
+                        )}
+                      >
+                        {m.label}
                       </span>
                       {active && <Check className="size-4 shrink-0 text-solar" />}
                     </button>

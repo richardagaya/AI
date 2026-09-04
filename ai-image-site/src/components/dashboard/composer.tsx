@@ -97,7 +97,11 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
   const usesImage = Boolean(image && acceptsImage);
   const needsImage = !isVideo && mode === "img2img";
   const canGenerate = prompt.trim().length > 0 && (!needsImage || usesImage);
-  const cost = costFor(model, usesImage);
+  const cost = costFor(model, {
+    withImage: usesImage,
+    aspect,
+    duration: isVideo ? duration : undefined,
+  });
 
   const aspects = UI_ASPECTS.filter((a) => model.aspects.includes(a.id));
 
@@ -200,7 +204,6 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
           models={models}
           value={model}
           onChange={selectModel}
-          withImage={usesImage}
         />
       </div>
 
@@ -284,6 +287,14 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
                     >
                       <AspectGlyph id={a.id} active={aspect === a.id} />
                       <span className="flex-1 font-semibold">{a.label}</span>
+                      <span className="font-mono text-[0.62rem] text-frost-faint">
+                        {costFor(model, {
+                          withImage: usesImage,
+                          aspect: a.id,
+                          duration: isVideo ? duration : undefined,
+                        })}{" "}
+                        cr
+                      </span>
                       {aspect === a.id && <Check className="size-3.5" />}
                     </DropdownOption>
                   ))}
@@ -307,6 +318,14 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
                         >
                           <Clock className="size-3.5 shrink-0" />
                           <span className="flex-1 font-semibold">{d} seconds</span>
+                          <span className="font-mono text-[0.62rem] text-frost-faint">
+                            {costFor(model, {
+                              withImage: usesImage,
+                              aspect,
+                              duration: d,
+                            })}{" "}
+                            cr
+                          </span>
                           {duration === d && <Check className="size-3.5" />}
                         </DropdownOption>
                       ))}
@@ -465,9 +484,9 @@ export function Composer({ variant }: { variant: "image" | "video" }) {
                   }
                   className="h-11 w-full rounded-xl border border-line bg-ink-soft/80 px-3 text-sm text-frost outline-none transition-all focus:border-solar/70 focus:ring-3 focus:ring-solar/12"
                 >
-                  <option value="text2img">Text → Image · {model.cost.text} cr</option>
+                  <option value="text2img">Text → Image</option>
                   <option value="img2img" disabled={!acceptsImage}>
-                    Image → Image · {model.cost.image} cr
+                    Image → Image
                     {acceptsImage ? "" : " (unsupported on this model)"}
                   </option>
                 </select>

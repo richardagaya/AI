@@ -3,13 +3,12 @@ import { env } from "@/lib/env";
 import { getSession } from "@/lib/auth";
 import { getAdminDb, getAdminInitError } from "@/lib/firebaseAdmin";
 import { fsCreateJobTx, fsUpdate } from "@/lib/firestoreRest";
-import { LOOK_MODEL } from "@/lib/fal-models";
+import { LOOK_MODEL, costFor } from "@/lib/fal-models";
 import { prepareFalJob, submitFalJob, waitForFalJob } from "@/lib/fal";
 import { publicWebhookUrl } from "@/lib/falWebhook";
 import { jobFailedFields, jobSucceededFields } from "@/lib/jobResult";
 import { isPromptDisallowed } from "@/lib/moderation";
 import {
-  LOOK_COST,
   LOOK_NEGATIVE_PROMPT,
   buildInfluencerPrompt,
   type InfluencerPhoto,
@@ -77,6 +76,9 @@ export async function POST(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Prompt not allowed" }, { status: 400 });
   }
 
+  const aspect = "2:3";
+  const costCredits = costFor(LOOK_MODEL, { withImage: true, aspect });
+
   const jobId = crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -93,7 +95,7 @@ export async function POST(req: Request, ctx: Ctx) {
         model: LOOK_MODEL.id,
         prompt: userPrompt,
         negativePrompt: null,
-        aspect: "2:3",
+        aspect,
         duration: null,
         camera: null,
         strength: null,
@@ -103,12 +105,12 @@ export async function POST(req: Request, ctx: Ctx) {
         outputUrl: null,
         outputKind: null,
         falRequestId: null,
-        costCredits: LOOK_COST,
+        costCredits,
         error: null,
         createdAt: now,
         updatedAt: now,
       },
-      LOOK_COST,
+      costCredits,
       session.token,
     );
   } catch (e) {
@@ -128,7 +130,7 @@ export async function POST(req: Request, ctx: Ctx) {
     const prepared = await prepareFalJob(LOOK_MODEL, {
       prompt,
       negativePrompt: LOOK_NEGATIVE_PROMPT,
-      aspect: "2:3",
+      aspect,
       inputImagePath: face.path,
       inputImageUrl: face.url,
     });
@@ -165,6 +167,6 @@ export async function POST(req: Request, ctx: Ctx) {
 
   return NextResponse.json({
     job: { id: jobId, status: webhookUrl ? "running" : "succeeded" },
-    costCredits: LOOK_COST,
+    costCredits,
   });
 }

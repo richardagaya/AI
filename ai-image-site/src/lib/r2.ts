@@ -15,7 +15,7 @@
  * When any of these is missing the app silently falls back to local disk
  * storage (see src/lib/storage.ts), so local dev keeps working without R2.
  */
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import crypto from "node:crypto";
 
 let client: S3Client | null = null;
@@ -66,4 +66,19 @@ export async function uploadToR2(
   );
   const base = process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, "");
   return `${base}/${key}`;
+}
+
+/** Best-effort delete of a public R2 object. Ignores URLs that are not ours. */
+export async function deleteFromR2(url: string): Promise<void> {
+  if (!isR2Configured()) return;
+  const base = process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, "");
+  if (!url.startsWith(`${base}/`)) return;
+  const key = url.slice(base.length + 1);
+  if (!key) return;
+  await getClient().send(
+    new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET!,
+      Key: key,
+    }),
+  );
 }

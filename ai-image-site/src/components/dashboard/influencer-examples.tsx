@@ -31,7 +31,7 @@ function ExampleCard({
 
   return (
     <figure
-      className="group relative mb-2.5 break-inside-avoid overflow-hidden rounded-2xl bg-ink-soft"
+      className="group relative mb-1.5 break-inside-avoid overflow-hidden rounded-xl bg-ink-soft"
       onMouseEnter={() => {
         if (kind === "video") void videoRef.current?.play().catch(() => {});
       }}
@@ -57,7 +57,7 @@ function ExampleCard({
           src={src}
           alt={prompt}
           loading={eager ? "eager" : "lazy"}
-          className="block w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+          className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
         />
       )}
       {kind === "video" && (
@@ -109,7 +109,7 @@ export function InfluencerExamples() {
         </div>
       </div>
 
-      <div className="columns-2 gap-2.5 md:columns-3 xl:columns-4">
+      <div className="columns-3 gap-1.5 sm:columns-4 lg:columns-5 xl:columns-6">
         {items.map((media, i) => (
           <ExampleCard
             key={media.id}

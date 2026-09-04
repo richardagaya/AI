@@ -10,8 +10,6 @@ export type StudioInfluencer = {
   createdAt: string;
 };
 
-export const LOOK_COST = 2;
-
 export const PHOTO_SLOTS = [
   {
     id: "ref",

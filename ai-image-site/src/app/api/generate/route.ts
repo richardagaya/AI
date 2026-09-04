@@ -93,7 +93,11 @@ export async function POST(req: Request) {
   const strength = Number.isFinite(strengthRaw)
     ? Math.min(1, Math.max(0.1, strengthRaw))
     : null;
-  const costCredits = costFor(model, withImage);
+  const costCredits = costFor(model, {
+    withImage,
+    aspect,
+    duration: durationSeconds ?? undefined,
+  });
 
   const upload = imageFile ? await saveUploadedFile(imageFile) : null;
 

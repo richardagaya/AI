@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { firebaseAuth } from "@/lib/firebase";
 import { apiUrl } from "@/lib/site";
@@ -11,7 +11,8 @@ import {
   refreshMeAtom,
   selectedInfluencerIdAtom,
 } from "@/lib/store";
-import { LOOK_COST, type StudioInfluencer } from "@/lib/influencers";
+import { LOOK_MODEL, costFor } from "@/lib/fal-models";
+import { type StudioInfluencer } from "@/lib/influencers";
 import { Button } from "@/components/ui/button";
 import { Label, Textarea } from "@/components/ui/field";
 import { GalleryGrid } from "../gallery-grid";
@@ -24,6 +25,7 @@ export function InfluencerStudioView({
   onNavigate: (v: DashboardView) => void;
 }) {
   const id = useAtomValue(selectedInfluencerIdAtom);
+  const setSelected = useSetAtom(selectedInfluencerIdAtom);
   const jobs = useAtomValue(jobsAtom);
   const refreshJobs = useSetAtom(refreshJobsAtom);
   const refreshMe = useSetAtom(refreshMeAtom);
@@ -33,6 +35,8 @@ export function InfluencerStudioView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,7 +66,33 @@ export function InfluencerStudioView({
     };
   }, [id]);
 
+  useEffect(() => {
+    setConfirmDelete(false);
+  }, [id]);
+
   const shots = jobs.filter((j) => j.influencerId === id);
+
+  async function removeInfluencer() {
+    if (!id || deleting) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const token = await firebaseAuth.currentUser?.getIdToken();
+      const res = await fetch(apiUrl(`/api/influencers/${id}`), {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Could not delete influencer");
+      setSelected(null);
+      onNavigate("influencers");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete influencer");
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function generate() {
     if (!id || busy) return;
@@ -151,6 +181,42 @@ export function InfluencerStudioView({
           <p className="mt-1 text-[0.78rem] text-frost-faint">
             Same person. Your prompt, your scene.
           </p>
+          {confirmDelete ? (
+            <div className="mt-4 rounded-2xl border border-red-400/25 bg-red-400/8 p-3">
+              <p className="text-[0.78rem] font-medium">Delete this influencer?</p>
+              <p className="mt-0.5 text-[0.7rem] text-frost-faint">
+                This cannot be undone.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  size="sm"
+                  className="bg-red-500 text-white hover:not-disabled:shadow-none"
+                  disabled={deleting}
+                  onClick={() => void removeInfluencer()}
+                >
+                  {deleting && <Loader2 className="size-3.5 animate-spin" />}
+                  {deleting ? "Deleting…" : "Delete"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={deleting}
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="mt-4 inline-flex cursor-pointer items-center gap-1.5 text-[0.74rem] font-semibold text-frost-faint transition-colors hover:text-red-300"
+            >
+              <Trash2 className="size-3.5" />
+              Delete influencer
+            </button>
+          )}
         </aside>
 
         <div>
@@ -177,7 +243,7 @@ export function InfluencerStudioView({
               disabled={busy || !prompt.trim()}
             >
               {busy && <Loader2 className="size-4 animate-spin" />}
-              {busy ? "Generating…" : `Generate · ${LOOK_COST} credits`}
+              {busy ? "Generating…" : `Generate · ${costFor(LOOK_MODEL, { withImage: true, aspect: "2:3" })} credits`}
             </Button>
           </div>
 

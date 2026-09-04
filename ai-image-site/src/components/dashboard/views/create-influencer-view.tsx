@@ -83,38 +83,39 @@ export function CreateInfluencerView({
         One photo of the person. Then describe anything you want them in.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-8 grid max-w-md gap-6">
-        <label className="grid gap-2">
+      <form onSubmit={onSubmit} className="mt-8 grid max-w-xs gap-4">
+        <label className="grid gap-1.5">
           <Label>Name</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Nova"
             maxLength={48}
+            className="h-10 px-3 text-[0.82rem]"
           />
         </label>
 
         <div>
           <Label>{slot.label}</Label>
-          <p className="mt-1 mb-2 text-[0.75rem] text-frost-faint">{slot.hint}</p>
+          <p className="mt-1 mb-2 text-[0.72rem] text-frost-faint">{slot.hint}</p>
           {preview ? (
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-line/70">
+            <div className="relative aspect-[3/4] max-w-[9.5rem] overflow-hidden rounded-xl border border-line/70">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={preview} alt="" className="size-full object-cover" />
               <button
                 type="button"
                 onClick={() => setFile(null)}
-                className="absolute top-2 right-2 cursor-pointer rounded-full bg-ink/80 p-1 text-frost"
+                className="absolute top-1.5 right-1.5 cursor-pointer rounded-full bg-ink/80 p-1 text-frost"
                 aria-label="Remove photo"
               >
-                <X className="size-3.5" />
+                <X className="size-3" />
               </button>
             </div>
           ) : (
-            <label className="grid aspect-[4/5] cursor-pointer place-items-center rounded-2xl border border-dashed border-line/80 bg-ink-card/40 text-frost-faint transition-colors hover:border-solar/40 hover:text-solar">
-              <span className="grid place-items-center gap-1.5 px-3 text-center">
-                <ImagePlus className="size-5" />
-                <span className="text-[0.68rem] font-semibold">Upload</span>
+            <label className="grid aspect-[3/4] max-w-[9.5rem] cursor-pointer place-items-center rounded-xl border border-dashed border-line/80 bg-ink-card/40 text-frost-faint transition-colors hover:border-solar/40 hover:text-solar">
+              <span className="grid place-items-center gap-1 px-2 text-center">
+                <ImagePlus className="size-4" />
+                <span className="text-[0.62rem] font-semibold">Upload</span>
               </span>
               <input
                 type="file"

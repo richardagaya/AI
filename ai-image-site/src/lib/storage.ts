@@ -1,7 +1,7 @@
 import path from "node:path";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import crypto from "node:crypto";
-import { isR2Configured, uploadToR2 } from "./r2";
+import { deleteFromR2, isR2Configured, uploadToR2 } from "./r2";
 
 export const STORAGE_ROOT = path.join(process.cwd(), "storage");
 export const UPLOADS_DIR = path.join(STORAGE_ROOT, "uploads");
@@ -45,6 +45,18 @@ export async function saveUploadedFile(file: File): Promise<SavedUpload> {
   const fullPath = path.join(UPLOADS_DIR, name);
   await writeFile(fullPath, buf);
   return { fullPath, url: null };
+}
+
+export async function deleteUploadedFile(photo: {
+  url: string | null;
+  path: string | null;
+}): Promise<void> {
+  if (photo.path) {
+    await unlink(photo.path).catch(() => {});
+  }
+  if (photo.url) {
+    await deleteFromR2(photo.url).catch(() => {});
+  }
 }
 
 export type PersistedOutput = {

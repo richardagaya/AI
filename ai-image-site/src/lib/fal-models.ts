@@ -581,8 +581,54 @@ export function modelSupportsImageInput(m: FalModelDef): boolean {
   return Boolean(m.endpoints.image);
 }
 
-export function costFor(m: FalModelDef, withImage: boolean): number {
-  return withImage ? m.cost.image : m.cost.text;
+export type CostConfig = {
+  /** Reference image attached (img2img / image-to-video) */
+  withImage?: boolean;
+  aspect?: string;
+  /** Seconds — video only */
+  duration?: number;
+};
+
+/** Extra credits for a larger-than-default canvas. */
+function aspectAddon(kind: GenKind, aspect: string): number {
+  if (kind === "video") {
+    if (aspect === "21:9") return 2;
+    return 0;
+  }
+  if (aspect === "21:9") return 2;
+  if (aspect === "16:9" || aspect === "9:16") return 1;
+  return 0;
+}
+
+/**
+ * Credits for one run of `m` at the given settings.
+ *
+ * `cost.text` / `cost.image` are the base price at the model's cheapest
+ * config (shortest duration, standard aspect). Higher settings add:
+ *   - video duration scales linearly from the shortest option
+ *   - cinematic / tall aspects add a flat surcharge
+ *
+ * Used by both the studio UI and the generate API so the charged amount
+ * always matches what the user sees.
+ */
+export function costFor(m: FalModelDef, config: CostConfig = {}): number {
+  const usesImage = Boolean(config.withImage && m.endpoints.image);
+  const base = usesImage ? m.cost.image : m.cost.text;
+  const aspect =
+    config.aspect && m.aspects.includes(config.aspect)
+      ? config.aspect
+      : m.aspects[0];
+  let credits = base + aspectAddon(m.kind, aspect);
+
+  if (m.kind === "video" && m.durations && m.durations.length > 0) {
+    const shortest = Math.min(...m.durations);
+    const seconds = resolveDuration(m, config.duration ?? shortest);
+    if (seconds > shortest) {
+      credits = Math.ceil((credits * seconds) / shortest);
+    }
+  }
+
+  return Math.max(1, credits);
 }
 
 /** Clamp a UI aspect to something the model supports. */

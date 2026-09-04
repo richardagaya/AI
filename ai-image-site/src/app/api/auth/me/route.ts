@@ -10,8 +10,12 @@ export async function GET(req: Request) {
     const account = await loadOrCreateStudioAccount(session);
     return NextResponse.json({ user: account });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Could not load account";
-    console.error("[auth/me]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    const raw = e instanceof Error ? e.message : "Could not load account";
+    const quota =
+      /RESOURCE_EXHAUSTED|Quota exceeded/i.test(raw)
+        ? "Firebase quota exceeded. The free Firestore plan ran out of reads — wait for the daily reset, or upgrade the Firebase project."
+        : raw;
+    console.error("[auth/me]", raw);
+    return NextResponse.json({ error: quota }, { status: 500 });
   }
 }
